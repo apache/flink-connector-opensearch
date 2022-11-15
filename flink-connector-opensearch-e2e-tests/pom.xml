@@ -27,7 +27,6 @@ under the License.
 		<groupId>org.apache.flink</groupId>
 		<artifactId>flink-connector-opensearch-parent</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>..</relativePath>
 	</parent>
 
 	<artifactId>flink-connector-opensearch-e2e-tests</artifactId>
@@ -82,21 +81,20 @@ under the License.
 						<goals>
 							<goal>copy</goal>
 						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.apache.flink</groupId>
+									<artifactId>flink-connector-test-utils</artifactId>
+									<version>${flink.version}</version>
+									<destFileName>flink-connector-test-utils.jar</destFileName>
+									<type>jar</type>
+									<outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
 					</execution>
 				</executions>
-				<configuration>
-					<artifactItems>
-						<artifactItem>
-							<groupId>org.apache.flink</groupId>
-							<artifactId>flink-connector-test-utils</artifactId>
-							<version>${flink.version}</version>
-							<destFileName>flink-connector-test-utils.jar</destFileName>
-							<type>jar</type>
-							<outputDirectory>${project.build.directory}/dependencies
-							</outputDirectory>
-						</artifactItem>
-					</artifactItems>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>

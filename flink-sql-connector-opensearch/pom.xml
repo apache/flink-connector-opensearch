@@ -27,7 +27,6 @@ under the License.
 		<groupId>org.apache.flink</groupId>
 		<artifactId>flink-connector-opensearch-parent</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>..</relativePath>
 	</parent>
 
 	<artifactId>flink-sql-connector-opensearch</artifactId>
@@ -115,7 +114,6 @@ under the License.
 								</filter>
 							</filters>
 							<relocations>
-								<!-- Force relocation of all Opensearch dependencies. -->
 								<relocation>
 									<pattern>org.apache.commons</pattern>
 									<shadedPattern>org.apache.flink.opensearch.shaded.org.apache.commons</shadedPattern>
