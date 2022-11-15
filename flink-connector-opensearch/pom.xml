@@ -164,8 +164,23 @@ under the License.
 		<dependency>
 			<groupId>org.opensearch</groupId>
 			<artifactId>opensearch-testcontainers</artifactId>
-			<version>1.0.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

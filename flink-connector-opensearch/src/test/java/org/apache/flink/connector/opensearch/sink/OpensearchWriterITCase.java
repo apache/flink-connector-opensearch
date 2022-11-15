@@ -18,6 +18,7 @@
 package org.apache.flink.connector.opensearch.sink;
 
 import org.apache.flink.api.common.operators.MailboxExecutor;
+import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.connector.opensearch.OpensearchUtil;
 import org.apache.flink.connector.opensearch.test.DockerImageVersions;
@@ -26,6 +27,7 @@ import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.groups.OperatorIOMetricGroup;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.metrics.testutils.MetricListener;
+import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.groups.InternalSinkWriterMetricGroup;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.util.FlinkRuntimeException;
@@ -42,6 +44,9 @@ import org.opensearch.action.bulk.BackoffPolicy;
 import org.opensearch.action.bulk.BulkProcessor;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
+import org.opensearch.action.delete.DeleteRequest;
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.update.UpdateRequest;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.common.unit.ByteSizeUnit;
@@ -55,6 +60,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.flink.connector.opensearch.sink.OpensearchTestClient.buildMessage;
@@ -198,6 +205,30 @@ class OpensearchWriterITCase {
     }
 
     @Test
+    void testIncrementRecordsSendMetric() throws Exception {
+        final String index = "test-inc-records-send";
+        final int flushAfterNActions = 2;
+        final BulkProcessorConfig bulkProcessorConfig =
+                new BulkProcessorConfig(flushAfterNActions, -1, -1, FlushBackoffType.NONE, 0, 0);
+
+        try (final OpensearchWriter<Tuple2<Integer, String>> writer =
+                createWriter(index, false, bulkProcessorConfig)) {
+            final Optional<Counter> recordsSend =
+                    metricListener.getCounter(MetricNames.NUM_RECORDS_SEND);
+            writer.write(Tuple2.of(1, buildMessage(1)), null);
+            // Update existing index
+            writer.write(Tuple2.of(1, "u" + buildMessage(2)), null);
+            // Delete index
+            writer.write(Tuple2.of(1, "d" + buildMessage(3)), null);
+
+            writer.blockingFlushAllActions();
+
+            assertThat(recordsSend).isPresent();
+            assertThat(recordsSend.get().getCount()).isEqualTo(3L);
+        }
+    }
+
+    @Test
     void testCurrentSendTime() throws Exception {
         final String index = "test-current-send-time";
         final int flushAfterNActions = 2;
@@ -234,7 +265,7 @@ class OpensearchWriterITCase {
             SinkWriterMetricGroup metricGroup) {
         return new OpensearchWriter<Tuple2<Integer, String>>(
                 Collections.singletonList(HttpHost.create(OS_CONTAINER.getHttpHostAddress())),
-                TestEmitter.jsonEmitter(index, context.getDataFieldName()),
+                new UpdatingEmitter(index, context.getDataFieldName()),
                 flushOnCheckpoint,
                 bulkProcessorConfig,
                 new TestBulkProcessorBuilderFactory(),
@@ -307,6 +338,47 @@ class OpensearchWriterITCase {
             }
             builder.setBackoffPolicy(backoffPolicy);
             return builder;
+        }
+    }
+
+    private static class UpdatingEmitter implements OpensearchEmitter<Tuple2<Integer, String>> {
+        private static final long serialVersionUID = 1L;
+
+        private final String dataFieldName;
+        private final String index;
+
+        UpdatingEmitter(String index, String dataFieldName) {
+            this.index = index;
+            this.dataFieldName = dataFieldName;
+        }
+
+        @Override
+        public void emit(
+                Tuple2<Integer, String> element,
+                SinkWriter.Context context,
+                RequestIndexer indexer) {
+
+            Map<String, Object> document = new HashMap<>();
+            document.put(dataFieldName, element.f1);
+
+            final char action = element.f1.charAt(0);
+            final String id = element.f0.toString();
+            switch (action) {
+                case 'd':
+                    {
+                        indexer.add(new DeleteRequest(index).id(id));
+                        break;
+                    }
+                case 'u':
+                    {
+                        indexer.add(new UpdateRequest().index(index).id(id).doc(document));
+                        break;
+                    }
+                default:
+                    {
+                        indexer.add(new IndexRequest(index).id(id).source(document));
+                    }
+            }
         }
     }
 

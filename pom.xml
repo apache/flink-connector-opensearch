@@ -368,6 +368,12 @@ under the License.
 				<scope>test</scope>
 			</dependency>
 
+			<dependency>
+				<groupId>org.opensearch</groupId>
+				<artifactId>opensearch-testcontainers</artifactId>
+				<version>1.0.0</version>
+				<scope>test</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
