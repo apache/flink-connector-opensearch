@@ -55,13 +55,6 @@ under the License.
 			<artifactId>flink-connector-opensearch</artifactId>
 			<version>${project.version}</version>
 			<type>test-jar</type>
-			<exclusions>
-				<!-- Prevent this from interfering with dependency tree -->
-				<exclusion>
-					<groupId>*</groupId>
-					<artifactId>*</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
@@ -107,22 +100,6 @@ under the License.
 						<configuration>
 							<finalName>opensearch-end-to-end-test</finalName>
 							<outputDirectory>dependencies</outputDirectory>
-							<artifactSet>
-								<excludes combine.children="append">
-									<exclude>com.google.code.findbugs:jsr305</exclude>
-									<exclude>org.slf4j:slf4j-api</exclude>
-								</excludes>
-							</artifactSet>
-							<filters combine.children="append">
-								<filter>
-									<artifact>*:*</artifact>
-									<excludes>
-										<exclude>META-INF/*.SF</exclude>
-										<exclude>META-INF/*.DSA</exclude>
-										<exclude>META-INF/*.RSA</exclude>
-									</excludes>
-								</filter>
-							</filters>
 						</configuration>
 					</execution>
 				</executions>
@@ -152,6 +129,20 @@ under the License.
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>default-test</id>
+						<phase>none</phase>
+					</execution>
+					<execution>
+						<id>integration-tests</id>
+						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -174,8 +165,6 @@ under the License.
 									<includes>
 										<include>**/*.*</include>
 									</includes>
-									<!-- E2E tests must not access flink-dist concurrently. -->
-									<forkCount>1</forkCount>
 									<systemPropertyVariables>
 										<moduleDir>${project.basedir}</moduleDir>
 									</systemPropertyVariables>
