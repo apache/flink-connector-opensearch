@@ -22,7 +22,6 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.connector.opensearch.sink.OpensearchSinkBuilder;
 import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.config.TableConfigOptions;
 import org.apache.flink.table.catalog.Column;
@@ -73,12 +72,6 @@ import static org.opensearch.common.Strings.capitalize;
 public class OpensearchDynamicSinkFactory implements DynamicTableSinkFactory {
     private static final String FACTORY_IDENTIFIER = "opensearch";
 
-    private final OpensearchSinkBuilderSupplier<RowData> sinkBuilderSupplier;
-
-    public OpensearchDynamicSinkFactory() {
-        this.sinkBuilderSupplier = OpensearchSinkBuilder::new;
-    }
-
     @Override
     public DynamicTableSink createDynamicTableSink(Context context) {
         List<LogicalTypeWithIndex> primaryKeyLogicalTypesWithIndex =
@@ -99,7 +92,6 @@ public class OpensearchDynamicSinkFactory implements DynamicTableSinkFactory {
                 primaryKeyLogicalTypesWithIndex,
                 context.getPhysicalRowDataType(),
                 capitalize(FACTORY_IDENTIFIER),
-                sinkBuilderSupplier,
                 getLocalTimeZoneId(context.getConfiguration()));
     }
 

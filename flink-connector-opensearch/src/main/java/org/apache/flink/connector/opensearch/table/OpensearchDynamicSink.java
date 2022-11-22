@@ -57,7 +57,6 @@ class OpensearchDynamicSink implements DynamicTableSink {
     final ZoneId localTimeZoneId;
 
     final String summaryString;
-    final OpensearchSinkBuilderSupplier<RowData> builderSupplier;
     final boolean isDynamicIndexWithSystemTime;
 
     OpensearchDynamicSink(
@@ -66,14 +65,12 @@ class OpensearchDynamicSink implements DynamicTableSink {
             List<LogicalTypeWithIndex> primaryKeyLogicalTypesWithIndex,
             DataType physicalRowDataType,
             String summaryString,
-            OpensearchSinkBuilderSupplier<RowData> builderSupplier,
             ZoneId localTimeZoneId) {
         this.format = checkNotNull(format);
         this.physicalRowDataType = checkNotNull(physicalRowDataType);
         this.primaryKeyLogicalTypesWithIndex = checkNotNull(primaryKeyLogicalTypesWithIndex);
         this.config = checkNotNull(config);
         this.summaryString = checkNotNull(summaryString);
-        this.builderSupplier = checkNotNull(builderSupplier);
         this.localTimeZoneId = localTimeZoneId;
         this.isDynamicIndexWithSystemTime = isDynamicIndexWithSystemTime();
     }
@@ -120,7 +117,7 @@ class OpensearchDynamicSink implements DynamicTableSink {
                 new RowOpensearchEmitter(
                         createIndexGenerator(), format, XContentType.JSON, createKeyExtractor());
 
-        OpensearchSinkBuilder<RowData> builder = builderSupplier.get();
+        final OpensearchSinkBuilder<RowData> builder = new OpensearchSinkBuilder<>();
         builder.setEmitter(rowOpensearchEmitter);
         builder.setHosts(config.getHosts().toArray(new HttpHost[0]));
         builder.setDeliveryGuarantee(config.getDeliveryGuarantee());
@@ -179,7 +176,6 @@ class OpensearchDynamicSink implements DynamicTableSink {
                 primaryKeyLogicalTypesWithIndex,
                 physicalRowDataType,
                 summaryString,
-                builderSupplier,
                 localTimeZoneId);
     }
 
@@ -202,8 +198,7 @@ class OpensearchDynamicSink implements DynamicTableSink {
                 && Objects.equals(
                         primaryKeyLogicalTypesWithIndex, that.primaryKeyLogicalTypesWithIndex)
                 && Objects.equals(config, that.config)
-                && Objects.equals(summaryString, that.summaryString)
-                && Objects.equals(builderSupplier, that.builderSupplier);
+                && Objects.equals(summaryString, that.summaryString);
     }
 
     @Override
@@ -213,7 +208,6 @@ class OpensearchDynamicSink implements DynamicTableSink {
                 physicalRowDataType,
                 primaryKeyLogicalTypesWithIndex,
                 config,
-                summaryString,
-                builderSupplier);
+                summaryString);
     }
 }
