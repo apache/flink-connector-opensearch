@@ -26,7 +26,6 @@ import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.data.TimestampData;
 import org.apache.flink.table.types.DataType;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Date;
@@ -39,6 +38,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.UnsupportedTemporalTypeException;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /** Suite tests for {@link IndexGenerator}. */
 class IndexGeneratorTest {
@@ -110,12 +111,12 @@ class IndexGeneratorTest {
                 IndexGeneratorFactory.createIndexGenerator(
                         "{order_timestamp|yyyy_MM_dd_HH-ss}_index", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("2020_03_18_12-14_index", indexGenerator.generate(rows.get(0)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("2020_03_18_12-14_index");
         IndexGenerator indexGenerator1 =
                 IndexGeneratorFactory.createIndexGenerator(
                         "{order_timestamp|yyyy_MM_dd_HH_mm}_index", fieldNames, dataTypes);
         indexGenerator1.open();
-        Assertions.assertEquals("2020_03_19_12_22_index", indexGenerator1.generate(rows.get(1)));
+        assertThat(indexGenerator1.generate(rows.get(1))).isEqualTo("2020_03_19_12_22_index");
     }
 
     @Test
@@ -124,12 +125,12 @@ class IndexGeneratorTest {
                 IndexGeneratorFactory.createIndexGenerator(
                         "{local_datetime|yyyy_MM_dd_HH-ss}_index", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("2020_03_18_12-14_index", indexGenerator.generate(rows.get(0)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("2020_03_18_12-14_index");
         IndexGenerator indexGenerator1 =
                 IndexGeneratorFactory.createIndexGenerator(
                         "{local_datetime|yyyy_MM_dd_HH_mm}_index", fieldNames, dataTypes);
         indexGenerator1.open();
-        Assertions.assertEquals("2020_03_19_12_22_index", indexGenerator1.generate(rows.get(1)));
+        assertThat(indexGenerator1.generate(rows.get(1))).isEqualTo("2020_03_19_12_22_index");
     }
 
     @Test
@@ -138,8 +139,8 @@ class IndexGeneratorTest {
                 IndexGeneratorFactory.createIndexGenerator(
                         "my-index-{log_date|yyyy/MM/dd}", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("my-index-2020/03/18", indexGenerator.generate(rows.get(0)));
-        Assertions.assertEquals("my-index-2020/03/19", indexGenerator.generate(rows.get(1)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("my-index-2020/03/18");
+        assertThat(indexGenerator.generate(rows.get(1))).isEqualTo("my-index-2020/03/19");
     }
 
     @Test
@@ -148,8 +149,8 @@ class IndexGeneratorTest {
                 IndexGeneratorFactory.createIndexGenerator(
                         "my-index-{local_date|yyyy/MM/dd}", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("my-index-2020/03/18", indexGenerator.generate(rows.get(0)));
-        Assertions.assertEquals("my-index-2020/03/19", indexGenerator.generate(rows.get(1)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("my-index-2020/03/18");
+        assertThat(indexGenerator.generate(rows.get(1))).isEqualTo("my-index-2020/03/19");
     }
 
     @Test
@@ -158,8 +159,8 @@ class IndexGeneratorTest {
                 IndexGeneratorFactory.createIndexGenerator(
                         "my-index-{log_time|HH-mm}", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("my-index-12-12", indexGenerator.generate(rows.get(0)));
-        Assertions.assertEquals("my-index-12-22", indexGenerator.generate(rows.get(1)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("my-index-12-12");
+        assertThat(indexGenerator.generate(rows.get(1))).isEqualTo("my-index-12-22");
     }
 
     @Test
@@ -168,8 +169,8 @@ class IndexGeneratorTest {
                 IndexGeneratorFactory.createIndexGenerator(
                         "my-index-{local_time|HH-mm}", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("my-index-12-13", indexGenerator.generate(rows.get(0)));
-        Assertions.assertEquals("my-index-12-13", indexGenerator.generate(rows.get(1)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("my-index-12-13");
+        assertThat(indexGenerator.generate(rows.get(1))).isEqualTo("my-index-12-13");
     }
 
     @Test
@@ -178,8 +179,8 @@ class IndexGeneratorTest {
                 IndexGeneratorFactory.createIndexGenerator(
                         "my-index-{local_time|}", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("my-index-12_13_14", indexGenerator.generate(rows.get(0)));
-        Assertions.assertEquals("my-index-12_13_14", indexGenerator.generate(rows.get(1)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("my-index-12_13_14");
+        assertThat(indexGenerator.generate(rows.get(1))).isEqualTo("my-index-12_13_14");
     }
 
     @Test
@@ -187,8 +188,8 @@ class IndexGeneratorTest {
         IndexGenerator indexGenerator =
                 IndexGeneratorFactory.createIndexGenerator("index_{item}", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("index_apple", indexGenerator.generate(rows.get(0)));
-        Assertions.assertEquals("index_peanut", indexGenerator.generate(rows.get(1)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("index_apple");
+        assertThat(indexGenerator.generate(rows.get(1))).isEqualTo("index_peanut");
     }
 
     @Test
@@ -196,8 +197,8 @@ class IndexGeneratorTest {
         IndexGenerator indexGenerator =
                 IndexGeneratorFactory.createIndexGenerator("my-index", fieldNames, dataTypes);
         indexGenerator.open();
-        Assertions.assertEquals("my-index", indexGenerator.generate(rows.get(0)));
-        Assertions.assertEquals("my-index", indexGenerator.generate(rows.get(1)));
+        assertThat(indexGenerator.generate(rows.get(0))).isEqualTo("my-index");
+        assertThat(indexGenerator.generate(rows.get(1))).isEqualTo("my-index");
     }
 
     @Test
@@ -209,7 +210,7 @@ class IndexGeneratorTest {
             IndexGeneratorFactory.createIndexGenerator(
                     "my-index-{unknown_ts|yyyy-MM-dd}", fieldNames, dataTypes);
         } catch (TableException e) {
-            Assertions.assertEquals(e.getMessage(), expectedExceptionMsg);
+            assertThat(e.getMessage()).isEqualTo(expectedExceptionMsg);
         }
     }
 
@@ -222,7 +223,7 @@ class IndexGeneratorTest {
             IndexGeneratorFactory.createIndexGenerator(
                     "my-index-{id|yyyy-MM-dd}", fieldNames, dataTypes);
         } catch (TableException e) {
-            Assertions.assertEquals(expectedExceptionMsg, e.getMessage());
+            assertThat(e.getMessage()).isEqualTo(expectedExceptionMsg);
         }
     }
 
@@ -235,7 +236,7 @@ class IndexGeneratorTest {
             IndexGeneratorFactory.createIndexGenerator(
                     "my-index-{local_date}-{local_time}", fieldNames, dataTypes);
         } catch (TableException e) {
-            Assertions.assertEquals(expectedExceptionMsg, e.getMessage());
+            assertThat(e.getMessage()).isEqualTo(expectedExceptionMsg);
         }
     }
 
@@ -246,7 +247,7 @@ class IndexGeneratorTest {
             IndexGeneratorFactory.createIndexGenerator(
                     "my-index-{local_date|yyyy/MM/dd HH:mm}", fieldNames, dataTypes);
         } catch (UnsupportedTemporalTypeException e) {
-            Assertions.assertEquals(expectedExceptionMsg, e.getMessage());
+            assertThat(e.getMessage()).isEqualTo(expectedExceptionMsg);
         }
     }
 
@@ -259,7 +260,7 @@ class IndexGeneratorTest {
         try {
             IndexGeneratorFactory.createIndexGenerator("index_{status}", fieldNames, dataTypes);
         } catch (IllegalArgumentException e) {
-            Assertions.assertEquals(expectedExceptionMsg, e.getMessage());
+            assertThat(e.getMessage()).isEqualTo(expectedExceptionMsg);
         }
     }
 
@@ -296,9 +297,10 @@ class IndexGeneratorTest {
                             String actualIndex = indexGenerator.generate(rows.get(1));
                             String expectedIndex2 =
                                     "my-index-" + LocalDateTime.now().format(dateTimeFormatter);
-                            Assertions.assertTrue(
-                                    actualIndex.equals(expectedIndex1)
-                                            || actualIndex.equals(expectedIndex2));
+                            assertThat(
+                                            actualIndex.equals(expectedIndex1)
+                                                    || actualIndex.equals(expectedIndex2))
+                                    .isTrue();
                         });
 
         List<String> invalidUseCases =
@@ -326,7 +328,7 @@ class IndexGeneratorTest {
                                                 dataTypes);
                                 indexGenerator.open();
                             } catch (TableException e) {
-                                Assertions.assertEquals(expectedExceptionMsg, e.getMessage());
+                                assertThat(e.getMessage()).isEqualTo(expectedExceptionMsg);
                             }
                         });
     }

@@ -25,8 +25,7 @@ import org.opensearch.client.RestHighLevelClient;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class OpensearchTestClient {
     private static final String DATA_FIELD_NAME = "data";
@@ -44,10 +43,11 @@ class OpensearchTestClient {
         for (final int id : ids) {
             try {
                 final GetResponse response = getResponse(index, id);
-                assertFalse(
-                        response.isExists(), String.format("Id %s is unexpectedly present.", id));
+                assertThat(response.isExists())
+                        .isFalse()
+                        .as(String.format("Id %s is unexpectedly present.", id));
             } catch (OpenSearchStatusException e) {
-                assertEquals(404, e.status().getStatus());
+                assertThat(e.status().getStatus()).isEqualTo(404);
             }
         }
     }
@@ -60,7 +60,7 @@ class OpensearchTestClient {
                 response = getResponse(index, id);
                 Thread.sleep(10);
             } while (response.isSourceEmpty());
-            assertEquals(buildMessage(id), response.getSource().get(DATA_FIELD_NAME));
+            assertThat(response.getSource().get(DATA_FIELD_NAME)).isEqualTo(buildMessage(id));
         }
     }
 

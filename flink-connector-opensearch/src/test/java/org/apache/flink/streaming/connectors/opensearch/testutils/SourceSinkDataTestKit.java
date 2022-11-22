@@ -23,7 +23,6 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.connectors.opensearch.OpensearchSinkFunction;
 import org.apache.flink.streaming.connectors.opensearch.RequestIndexer;
 
-import org.junit.Assert;
 import org.opensearch.action.get.GetRequest;
 import org.opensearch.action.get.GetResponse;
 import org.opensearch.action.index.IndexRequest;
@@ -36,6 +35,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * This class contains utilities and a pre-defined source function and Opensearch Sink function used
@@ -132,7 +133,7 @@ public class SourceSinkDataTestKit {
         for (int i = 0; i < NUM_ELEMENTS; i++) {
             GetResponse response =
                     client.get(new GetRequest(index, Integer.toString(i)), RequestOptions.DEFAULT);
-            Assert.assertEquals(DATA_PREFIX + i, response.getSource().get(DATA_FIELD_NAME));
+            assertThat(response.getSource().get(DATA_FIELD_NAME)).isEqualTo(DATA_PREFIX + i);
         }
     }
 

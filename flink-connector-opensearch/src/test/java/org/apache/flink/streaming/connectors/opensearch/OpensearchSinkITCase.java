@@ -29,29 +29,29 @@ import org.apache.flink.streaming.connectors.opensearch.testutils.SourceSinkData
 import org.apache.flink.test.util.AbstractTestBase;
 
 import org.apache.http.HttpHost;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** IT cases for the {@link OpensearchSink}. */
+@Testcontainers
 public class OpensearchSinkITCase extends AbstractTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpensearchSinkITCase.class);
 
-    @ClassRule
-    public static final OpensearchContainer OS_CONTAINER =
+    @Container
+    private static final OpensearchContainer OS_CONTAINER =
             OpensearchUtil.createOpensearchContainer(DockerImageVersions.OPENSEARCH_1, LOG);
 
     @Test
@@ -68,27 +68,22 @@ public class OpensearchSinkITCase extends AbstractTestBase {
 
     @Test
     public void testNullAddresses() {
-        try {
-            createOpensearchSink(1, null, SourceSinkDataTestKit.getJsonSinkFunction("test"));
-        } catch (IllegalArgumentException | NullPointerException expectedException) {
-            // test passes
-            return;
-        }
-
-        fail();
+        assertThatThrownBy(
+                        () ->
+                                createOpensearchSink(
+                                        1, null, SourceSinkDataTestKit.getJsonSinkFunction("test")))
+                .isInstanceOfAny(IllegalArgumentException.class, NullPointerException.class);
     }
 
     @Test
     public void testEmptyAddresses() {
-        try {
-            createOpensearchSink(
-                    1, Collections.emptyList(), SourceSinkDataTestKit.getJsonSinkFunction("test"));
-        } catch (IllegalArgumentException expectedException) {
-            // test passes
-            return;
-        }
-
-        fail();
+        assertThatThrownBy(
+                        () ->
+                                createOpensearchSink(
+                                        1,
+                                        Collections.emptyList(),
+                                        SourceSinkDataTestKit.getJsonSinkFunction("test")))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -104,14 +99,9 @@ public class OpensearchSinkITCase extends AbstractTestBase {
                         SourceSinkDataTestKit.getJsonSinkFunction("test"),
                         "123.123.123.123")); // incorrect ip address
 
-        try {
-            env.execute("Opensearch Sink Test");
-        } catch (JobExecutionException expectedException) {
-            assertThat(expectedException.getCause(), instanceOf(JobException.class));
-            return;
-        }
-
-        fail();
+        assertThatThrownBy(() -> env.execute("Opensearch Sink Test"))
+                .isInstanceOf(JobExecutionException.class)
+                .hasCauseInstanceOf(JobException.class);
     }
 
     private OpensearchSink<Tuple2<Integer, String>> createOpensearchSink(

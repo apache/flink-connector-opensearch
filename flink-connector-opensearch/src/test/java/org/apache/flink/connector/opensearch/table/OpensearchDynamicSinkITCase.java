@@ -38,7 +38,6 @@ import org.apache.flink.table.data.TimestampData;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.TestLoggerExtension;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.OpenSearchStatusException;
@@ -67,6 +66,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import static org.apache.flink.table.api.Expressions.row;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /** IT tests for {@link OpensearchDynamicSink}. */
 @ExtendWith(TestLoggerExtension.class)
@@ -169,7 +169,7 @@ class OpensearchDynamicSinkITCase {
         expectedMap.put("e", 2);
         expectedMap.put("f", "2003-10-20");
         expectedMap.put("g", "2012-12-12 12:12:12");
-        Assertions.assertEquals(response, expectedMap);
+        assertThat(response).isEqualTo(expectedMap);
     }
 
     @Test
@@ -219,7 +219,7 @@ class OpensearchDynamicSinkITCase {
         expectedMap.put("e", 2);
         expectedMap.put("f", "2003-10-20");
         expectedMap.put("g", "2012-12-12 12:12:12");
-        Assertions.assertEquals(response, expectedMap);
+        assertThat(response).isEqualTo(expectedMap);
     }
 
     @Test
@@ -302,7 +302,7 @@ class OpensearchDynamicSinkITCase {
         HashSet<Map<Object, Object>> expectedSet = new HashSet<>();
         expectedSet.add(expectedMap1);
         expectedSet.add(expectedMap2);
-        Assertions.assertEquals(resultSet, expectedSet);
+        assertThat(resultSet).isEqualTo(expectedSet);
     }
 
     @Test
@@ -333,7 +333,7 @@ class OpensearchDynamicSinkITCase {
         Map<Object, Object> expectedMap = new HashMap<>();
         expectedMap.put("a", 1);
         expectedMap.put("b", "2012-12-12 12:12:12");
-        Assertions.assertEquals(response, expectedMap);
+        assertThat(response).isEqualTo(expectedMap);
     }
 
     @Test
@@ -391,6 +391,6 @@ class OpensearchDynamicSinkITCase {
         Map<Object, Object> expectedMap = new HashMap<>();
         expectedMap.put("a", 1);
         expectedMap.put("b", "2012-12-12 12:12:12");
-        Assertions.assertEquals(response, expectedMap);
+        assertThat(response).isEqualTo(expectedMap);
     }
 }
