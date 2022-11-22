@@ -19,22 +19,10 @@
 package org.apache.flink.connector.opensearch.sink;
 
 import org.apache.flink.annotation.PublicEvolving;
-import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.java.ClosureCleaner;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.util.InstantiationUtil;
 
 import org.apache.http.HttpHost;
-import org.opensearch.action.ActionListener;
-import org.opensearch.action.bulk.BackoffPolicy;
-import org.opensearch.action.bulk.BulkProcessor;
-import org.opensearch.action.bulk.BulkRequest;
-import org.opensearch.action.bulk.BulkResponse;
-import org.opensearch.client.RequestOptions;
-import org.opensearch.client.RestHighLevelClient;
-import org.opensearch.common.unit.ByteSizeUnit;
-import org.opensearch.common.unit.ByteSizeValue;
-import org.opensearch.common.unit.TimeValue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -297,72 +285,6 @@ public class OpensearchSinkBuilder<IN> {
         return self();
     }
 
-    protected BulkProcessorBuilderFactory getBulkProcessorBuilderFactory() {
-        return new BulkProcessorBuilderFactory() {
-            @Override
-            public BulkProcessor.Builder apply(
-                    RestHighLevelClient client,
-                    BulkProcessorConfig bulkProcessorConfig,
-                    BulkProcessor.Listener listener) {
-                BulkProcessor.Builder builder =
-                        BulkProcessor.builder(
-                                new BulkRequestConsumerFactory() { // This cannot be inlined as a
-                                    // lambda because then
-                                    // deserialization fails
-                                    @Override
-                                    public void accept(
-                                            BulkRequest bulkRequest,
-                                            ActionListener<BulkResponse>
-                                                    bulkResponseActionListener) {
-                                        client.bulkAsync(
-                                                bulkRequest,
-                                                RequestOptions.DEFAULT,
-                                                bulkResponseActionListener);
-                                    }
-                                },
-                                listener);
-
-                if (bulkProcessorConfig.getBulkFlushMaxActions() != -1) {
-                    builder.setBulkActions(bulkProcessorConfig.getBulkFlushMaxActions());
-                }
-
-                if (bulkProcessorConfig.getBulkFlushMaxMb() != -1) {
-                    builder.setBulkSize(
-                            new ByteSizeValue(
-                                    bulkProcessorConfig.getBulkFlushMaxMb(), ByteSizeUnit.MB));
-                }
-
-                if (bulkProcessorConfig.getBulkFlushInterval() != -1) {
-                    builder.setFlushInterval(
-                            new TimeValue(bulkProcessorConfig.getBulkFlushInterval()));
-                }
-
-                BackoffPolicy backoffPolicy;
-                final TimeValue backoffDelay =
-                        new TimeValue(bulkProcessorConfig.getBulkFlushBackOffDelay());
-                final int maxRetryCount = bulkProcessorConfig.getBulkFlushBackoffRetries();
-                switch (bulkProcessorConfig.getFlushBackoffType()) {
-                    case CONSTANT:
-                        backoffPolicy = BackoffPolicy.constantBackoff(backoffDelay, maxRetryCount);
-                        break;
-                    case EXPONENTIAL:
-                        backoffPolicy =
-                                BackoffPolicy.exponentialBackoff(backoffDelay, maxRetryCount);
-                        break;
-                    case NONE:
-                        backoffPolicy = BackoffPolicy.noBackoff();
-                        break;
-                    default:
-                        throw new IllegalArgumentException(
-                                "Received unknown backoff policy type "
-                                        + bulkProcessorConfig.getFlushBackoffType());
-                }
-                builder.setBackoffPolicy(backoffPolicy);
-                return builder;
-            }
-        };
-    }
-
     /**
      * Constructs the {@link OpensearchSink} with the properties configured this builder.
      *
@@ -375,17 +297,8 @@ public class OpensearchSinkBuilder<IN> {
         NetworkClientConfig networkClientConfig = buildNetworkClientConfig();
         BulkProcessorConfig bulkProcessorConfig = buildBulkProcessorConfig();
 
-        BulkProcessorBuilderFactory bulkProcessorBuilderFactory = getBulkProcessorBuilderFactory();
-        ClosureCleaner.clean(
-                bulkProcessorBuilderFactory, ExecutionConfig.ClosureCleanerLevel.RECURSIVE, true);
-
         return new OpensearchSink<>(
-                hosts,
-                emitter,
-                deliveryGuarantee,
-                bulkProcessorBuilderFactory,
-                bulkProcessorConfig,
-                networkClientConfig);
+                hosts, emitter, deliveryGuarantee, bulkProcessorConfig, networkClientConfig);
     }
 
     private NetworkClientConfig buildNetworkClientConfig() {

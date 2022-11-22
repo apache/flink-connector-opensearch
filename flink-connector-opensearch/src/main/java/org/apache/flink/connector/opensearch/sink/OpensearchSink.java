@@ -56,7 +56,6 @@ public class OpensearchSink<IN> implements Sink<IN> {
     private final List<HttpHost> hosts;
     private final OpensearchEmitter<? super IN> emitter;
     private final BulkProcessorConfig buildBulkProcessorConfig;
-    private final BulkProcessorBuilderFactory bulkProcessorBuilderFactory;
     private final NetworkClientConfig networkClientConfig;
     private final DeliveryGuarantee deliveryGuarantee;
 
@@ -64,11 +63,9 @@ public class OpensearchSink<IN> implements Sink<IN> {
             List<HttpHost> hosts,
             OpensearchEmitter<? super IN> emitter,
             DeliveryGuarantee deliveryGuarantee,
-            BulkProcessorBuilderFactory bulkProcessorBuilderFactory,
             BulkProcessorConfig buildBulkProcessorConfig,
             NetworkClientConfig networkClientConfig) {
         this.hosts = checkNotNull(hosts);
-        this.bulkProcessorBuilderFactory = checkNotNull(bulkProcessorBuilderFactory);
         checkArgument(!hosts.isEmpty(), "Hosts cannot be empty.");
         this.emitter = checkNotNull(emitter);
         this.deliveryGuarantee = checkNotNull(deliveryGuarantee);
@@ -83,7 +80,6 @@ public class OpensearchSink<IN> implements Sink<IN> {
                 emitter,
                 deliveryGuarantee == DeliveryGuarantee.AT_LEAST_ONCE,
                 buildBulkProcessorConfig,
-                bulkProcessorBuilderFactory,
                 networkClientConfig,
                 context.metricGroup(),
                 context.getMailboxExecutor());

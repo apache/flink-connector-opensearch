@@ -33,7 +33,9 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContexts;
+import org.opensearch.action.ActionListener;
 import org.opensearch.action.DocWriteRequest;
+import org.opensearch.action.bulk.BackoffPolicy;
 import org.opensearch.action.bulk.BulkItemResponse;
 import org.opensearch.action.bulk.BulkProcessor;
 import org.opensearch.action.bulk.BulkRequest;
@@ -41,9 +43,13 @@ import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
+import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.common.unit.ByteSizeUnit;
+import org.opensearch.common.unit.ByteSizeValue;
+import org.opensearch.common.unit.TimeValue;
 import org.opensearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +101,6 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
             OpensearchEmitter<? super IN> emitter,
             boolean flushOnCheckpoint,
             BulkProcessorConfig bulkProcessorConfig,
-            BulkProcessorBuilderFactory bulkProcessorBuilderFactory,
             NetworkClientConfig networkClientConfig,
             SinkWriterMetricGroup metricGroup,
             MailboxExecutor mailboxExecutor) {
@@ -107,7 +112,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
                         configureRestClientBuilder(
                                 RestClient.builder(hosts.toArray(new HttpHost[0])),
                                 networkClientConfig));
-        this.bulkProcessor = createBulkProcessor(bulkProcessorBuilderFactory, bulkProcessorConfig);
+        this.bulkProcessor = createBulkProcessor(bulkProcessorConfig);
         this.requestIndexer = new DefaultRequestIndexer(metricGroup.getNumRecordsSendCounter());
         checkNotNull(metricGroup);
         metricGroup.setCurrentSendTimeGauge(() -> ackTime - lastSendTime);
@@ -216,13 +221,58 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
         return builder;
     }
 
-    private BulkProcessor createBulkProcessor(
-            BulkProcessorBuilderFactory bulkProcessorBuilderFactory,
-            BulkProcessorConfig bulkProcessorConfig) {
+    private BulkProcessor createBulkProcessor(BulkProcessorConfig bulkProcessorConfig) {
 
-        BulkProcessor.Builder builder =
-                bulkProcessorBuilderFactory.apply(client, bulkProcessorConfig, new BulkListener());
+        final BulkProcessor.Builder builder =
+                BulkProcessor.builder(
+                        new BulkRequestConsumerFactory() { // This cannot be inlined as a
+                            // lambda because then
+                            // deserialization fails
+                            @Override
+                            public void accept(
+                                    BulkRequest bulkRequest,
+                                    ActionListener<BulkResponse> bulkResponseActionListener) {
+                                client.bulkAsync(
+                                        bulkRequest,
+                                        RequestOptions.DEFAULT,
+                                        bulkResponseActionListener);
+                            }
+                        },
+                        new BulkListener());
 
+        if (bulkProcessorConfig.getBulkFlushMaxActions() != -1) {
+            builder.setBulkActions(bulkProcessorConfig.getBulkFlushMaxActions());
+        }
+
+        if (bulkProcessorConfig.getBulkFlushMaxMb() != -1) {
+            builder.setBulkSize(
+                    new ByteSizeValue(bulkProcessorConfig.getBulkFlushMaxMb(), ByteSizeUnit.MB));
+        }
+
+        if (bulkProcessorConfig.getBulkFlushInterval() != -1) {
+            builder.setFlushInterval(new TimeValue(bulkProcessorConfig.getBulkFlushInterval()));
+        }
+
+        BackoffPolicy backoffPolicy;
+        final TimeValue backoffDelay =
+                new TimeValue(bulkProcessorConfig.getBulkFlushBackOffDelay());
+        final int maxRetryCount = bulkProcessorConfig.getBulkFlushBackoffRetries();
+        switch (bulkProcessorConfig.getFlushBackoffType()) {
+            case CONSTANT:
+                backoffPolicy = BackoffPolicy.constantBackoff(backoffDelay, maxRetryCount);
+                break;
+            case EXPONENTIAL:
+                backoffPolicy = BackoffPolicy.exponentialBackoff(backoffDelay, maxRetryCount);
+                break;
+            case NONE:
+                backoffPolicy = BackoffPolicy.noBackoff();
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        "Received unknown backoff policy type "
+                                + bulkProcessorConfig.getFlushBackoffType());
+        }
+        builder.setBackoffPolicy(backoffPolicy);
         // This makes flush() blocking
         builder.setConcurrentRequests(0);
 

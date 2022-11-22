@@ -39,19 +39,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.opensearch.action.ActionListener;
-import org.opensearch.action.bulk.BackoffPolicy;
-import org.opensearch.action.bulk.BulkProcessor;
-import org.opensearch.action.bulk.BulkRequest;
-import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
-import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
-import org.opensearch.common.unit.ByteSizeUnit;
-import org.opensearch.common.unit.ByteSizeValue;
-import org.opensearch.common.unit.TimeValue;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -268,7 +259,6 @@ class OpensearchWriterITCase {
                 new UpdatingEmitter(index, context.getDataFieldName()),
                 flushOnCheckpoint,
                 bulkProcessorConfig,
-                new TestBulkProcessorBuilderFactory(),
                 new NetworkClientConfig(
                         OS_CONTAINER.getUsername(),
                         OS_CONTAINER.getPassword(),
@@ -279,66 +269,6 @@ class OpensearchWriterITCase {
                         true),
                 metricGroup,
                 new TestMailbox());
-    }
-
-    private static class TestBulkProcessorBuilderFactory implements BulkProcessorBuilderFactory {
-        @Override
-        public BulkProcessor.Builder apply(
-                RestHighLevelClient client,
-                BulkProcessorConfig bulkProcessorConfig,
-                BulkProcessor.Listener listener) {
-            BulkProcessor.Builder builder =
-                    BulkProcessor.builder(
-                            new BulkRequestConsumerFactory() { // This cannot be inlined as a lambda
-                                // because then deserialization fails
-                                @Override
-                                public void accept(
-                                        BulkRequest bulkRequest,
-                                        ActionListener<BulkResponse> bulkResponseActionListener) {
-                                    client.bulkAsync(
-                                            bulkRequest,
-                                            RequestOptions.DEFAULT,
-                                            bulkResponseActionListener);
-                                }
-                            },
-                            listener);
-
-            if (bulkProcessorConfig.getBulkFlushMaxActions() != -1) {
-                builder.setBulkActions(bulkProcessorConfig.getBulkFlushMaxActions());
-            }
-
-            if (bulkProcessorConfig.getBulkFlushMaxMb() != -1) {
-                builder.setBulkSize(
-                        new ByteSizeValue(
-                                bulkProcessorConfig.getBulkFlushMaxMb(), ByteSizeUnit.MB));
-            }
-
-            if (bulkProcessorConfig.getBulkFlushInterval() != -1) {
-                builder.setFlushInterval(new TimeValue(bulkProcessorConfig.getBulkFlushInterval()));
-            }
-
-            BackoffPolicy backoffPolicy;
-            final TimeValue backoffDelay =
-                    new TimeValue(bulkProcessorConfig.getBulkFlushBackOffDelay());
-            final int maxRetryCount = bulkProcessorConfig.getBulkFlushBackoffRetries();
-            switch (bulkProcessorConfig.getFlushBackoffType()) {
-                case CONSTANT:
-                    backoffPolicy = BackoffPolicy.constantBackoff(backoffDelay, maxRetryCount);
-                    break;
-                case EXPONENTIAL:
-                    backoffPolicy = BackoffPolicy.exponentialBackoff(backoffDelay, maxRetryCount);
-                    break;
-                case NONE:
-                    backoffPolicy = BackoffPolicy.noBackoff();
-                    break;
-                default:
-                    throw new IllegalArgumentException(
-                            "Received unknown backoff policy type "
-                                    + bulkProcessorConfig.getFlushBackoffType());
-            }
-            builder.setBackoffPolicy(backoffPolicy);
-            return builder;
-        }
     }
 
     private static class UpdatingEmitter implements OpensearchEmitter<Tuple2<Integer, String>> {
