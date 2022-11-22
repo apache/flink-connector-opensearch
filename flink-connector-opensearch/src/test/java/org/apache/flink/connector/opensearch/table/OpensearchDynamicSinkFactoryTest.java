@@ -25,8 +25,10 @@ import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.catalog.Column;
 import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.catalog.UniqueConstraint;
+import org.apache.flink.table.connector.ChangelogMode;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.connector.sink.SinkV2Provider;
+import org.apache.flink.types.RowKind;
 import org.apache.flink.util.TestLoggerExtension;
 
 import org.junit.jupiter.api.Assertions;
@@ -263,5 +265,26 @@ class OpensearchDynamicSinkFactoryTest {
                 (SinkV2Provider)
                         opensearchSink.getSinkRuntimeProvider(new OpensearchUtil.MockContext());
         assertThat(2).isEqualTo(provider.getParallelism().get());
+    }
+
+    @Test
+    public void validateDynamicIndexOnChangelogStream() {
+        OpensearchDynamicSinkFactory sinkFactory = new OpensearchDynamicSinkFactory();
+        DynamicTableSink sink =
+                sinkFactory.createDynamicTableSink(
+                        createPrefilledTestContext()
+                                .withOption(
+                                        OpensearchConnectorOptions.INDEX_OPTION.key(),
+                                        "dynamic-index-{now()|yyyy-MM-dd}_index")
+                                .build());
+
+        ChangelogMode changelogMode =
+                ChangelogMode.newBuilder()
+                        .addContainedKind(RowKind.DELETE)
+                        .addContainedKind(RowKind.INSERT)
+                        .build();
+        assertValidationException(
+                "Dynamic indexing based on system time only works on append only stream.",
+                () -> sink.getChangelogMode(changelogMode));
     }
 }

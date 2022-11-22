@@ -21,6 +21,7 @@ package org.apache.flink.connector.opensearch.sink;
 import javax.annotation.Nullable;
 
 import java.io.Serializable;
+import java.util.Optional;
 
 class NetworkClientConfig implements Serializable {
 
@@ -79,8 +80,7 @@ class NetworkClientConfig implements Serializable {
         return connectionPathPrefix;
     }
 
-    @Nullable
-    public Boolean isAllowInsecure() {
-        return allowInsecure;
+    public Optional<Boolean> isAllowInsecure() {
+        return Optional.ofNullable(allowInsecure);
     }
 }

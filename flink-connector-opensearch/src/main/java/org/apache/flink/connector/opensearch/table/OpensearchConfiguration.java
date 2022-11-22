@@ -43,7 +43,6 @@ import static org.apache.flink.connector.opensearch.table.OpensearchConnectorOpt
 import static org.apache.flink.connector.opensearch.table.OpensearchConnectorOptions.CONNECTION_REQUEST_TIMEOUT;
 import static org.apache.flink.connector.opensearch.table.OpensearchConnectorOptions.CONNECTION_TIMEOUT;
 import static org.apache.flink.connector.opensearch.table.OpensearchConnectorOptions.DELIVERY_GUARANTEE_OPTION;
-import static org.apache.flink.connector.opensearch.table.OpensearchConnectorOptions.FLUSH_ON_CHECKPOINT_OPTION;
 import static org.apache.flink.connector.opensearch.table.OpensearchConnectorOptions.HOSTS_OPTION;
 import static org.apache.flink.connector.opensearch.table.OpensearchConnectorOptions.INDEX_OPTION;
 import static org.apache.flink.connector.opensearch.table.OpensearchConnectorOptions.KEY_DELIMITER_OPTION;
@@ -96,10 +95,6 @@ class OpensearchConfiguration {
 
     public Optional<Long> getBulkFlushBackoffDelay() {
         return config.getOptional(BULK_FLUSH_BACKOFF_DELAY_OPTION).map(Duration::toMillis);
-    }
-
-    public boolean isDisableFlushOnCheckpoint() {
-        return !config.get(FLUSH_ON_CHECKPOINT_OPTION);
     }
 
     public String getIndex() {

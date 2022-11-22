@@ -54,6 +54,7 @@ under the License.
 	<modules>
 		<module>flink-connector-opensearch</module>
 		<module>flink-connector-opensearch-e2e-tests</module>
+		<module>flink-sql-connector-opensearch</module>
 	</modules>
 
 	<properties>
@@ -376,23 +377,6 @@ under the License.
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
-
-	<profiles>
-
-		<!-- Create SQL Client uber jars by default -->
-		<profile>
-			<id>sql-jars</id>
-			<activation>
-				<property>
-					<name>!skipSqlJars</name>
-				</property>
-			</activation>
-			<modules>
-				<module>flink-sql-connector-opensearch</module>
-			</modules>
-		</profile>
-	</profiles>
 
 	<build>
 		<plugins>

@@ -105,12 +105,6 @@ public class OpensearchConnectorOptions {
                     .noDefaultValue()
                     .withDescription("Delay between each backoff attempt.");
 
-    public static final ConfigOption<Boolean> FLUSH_ON_CHECKPOINT_OPTION =
-            ConfigOptions.key("sink.flush-on-checkpoint")
-                    .booleanType()
-                    .defaultValue(true)
-                    .withDescription("Disables flushing on checkpoint");
-
     public static final ConfigOption<String> CONNECTION_PATH_PREFIX_OPTION =
             ConfigOptions.key("connection.path-prefix")
                     .stringType()

@@ -41,10 +41,12 @@ import org.apache.flink.util.TestLoggerExtension;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.opensearch.OpenSearchStatusException;
 import org.opensearch.action.get.GetRequest;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.rest.RestStatus;
 import org.opensearch.search.SearchHits;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
@@ -56,6 +58,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -326,6 +330,64 @@ class OpensearchDynamicSinkITCase {
         Map<String, Object> response =
                 client.get(new GetRequest("dynamic-index-2012-12-12", "1"), RequestOptions.DEFAULT)
                         .getSource();
+        Map<Object, Object> expectedMap = new HashMap<>();
+        expectedMap.put("a", 1);
+        expectedMap.put("b", "2012-12-12 12:12:12");
+        Assertions.assertEquals(response, expectedMap);
+    }
+
+    @Test
+    public void testWritingDocumentsWithDynamicIndexFromSystemTime() throws Exception {
+        TableEnvironment tableEnvironment =
+                TableEnvironment.create(EnvironmentSettings.inStreamingMode());
+
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        tableEnvironment
+                .getConfig()
+                .getConfiguration()
+                .setString("table.local-time-zone", "Asia/Shanghai");
+
+        String dynamicIndex1 =
+                "dynamic-index-"
+                        + dateTimeFormatter.format(LocalDateTime.now(ZoneId.of("Asia/Shanghai")))
+                        + "_index";
+        String index = "dynamic-index-{now()|yyyy-MM-dd}_index";
+        tableEnvironment.executeSql(
+                "CREATE TABLE esTable ("
+                        + "a BIGINT NOT NULL,\n"
+                        + "b TIMESTAMP NOT NULL,\n"
+                        + "PRIMARY KEY (a) NOT ENFORCED\n"
+                        + ")\n"
+                        + "WITH (\n"
+                        + getConnectorSql(index)
+                        + ")");
+        String dynamicIndex2 =
+                "dynamic-index-"
+                        + dateTimeFormatter.format(LocalDateTime.now(ZoneId.of("Asia/Shanghai")))
+                        + "_index";
+
+        tableEnvironment
+                .fromValues(row(1L, LocalDateTime.parse("2012-12-12T12:12:12")))
+                .executeInsert("esTable")
+                .await();
+
+        RestHighLevelClient client = OpensearchUtil.createClient(OS_CONTAINER);
+
+        Map<String, Object> response;
+        try {
+            response =
+                    client.get(new GetRequest(dynamicIndex1, "1"), RequestOptions.DEFAULT)
+                            .getSource();
+        } catch (OpenSearchStatusException e) {
+            if (e.status() == RestStatus.NOT_FOUND) {
+                response =
+                        client.get(new GetRequest(dynamicIndex2, "1"), RequestOptions.DEFAULT)
+                                .getSource();
+            } else {
+                throw e;
+            }
+        }
+
         Map<Object, Object> expectedMap = new HashMap<>();
         expectedMap.put("a", 1);
         expectedMap.put("b", "2012-12-12 12:12:12");

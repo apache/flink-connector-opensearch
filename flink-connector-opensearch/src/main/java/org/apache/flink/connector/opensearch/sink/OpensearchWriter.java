@@ -177,8 +177,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
                         httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                     }
 
-                    if (networkClientConfig.isAllowInsecure() != null
-                            && networkClientConfig.isAllowInsecure()) {
+                    if (networkClientConfig.isAllowInsecure().orElse(false)) {
                         try {
                             httpClientBuilder.setSSLContext(
                                     SSLContexts.custom()

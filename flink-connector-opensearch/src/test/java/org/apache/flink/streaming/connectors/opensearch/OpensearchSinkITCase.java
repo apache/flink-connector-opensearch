@@ -69,8 +69,7 @@ public class OpensearchSinkITCase extends AbstractTestBase {
     @Test
     public void testNullAddresses() {
         try {
-            createOpensearchSink(
-                    1, getClusterName(), null, SourceSinkDataTestKit.getJsonSinkFunction("test"));
+            createOpensearchSink(1, null, SourceSinkDataTestKit.getJsonSinkFunction("test"));
         } catch (IllegalArgumentException | NullPointerException expectedException) {
             // test passes
             return;
@@ -83,10 +82,7 @@ public class OpensearchSinkITCase extends AbstractTestBase {
     public void testEmptyAddresses() {
         try {
             createOpensearchSink(
-                    1,
-                    getClusterName(),
-                    Collections.emptyList(),
-                    SourceSinkDataTestKit.getJsonSinkFunction("test"));
+                    1, Collections.emptyList(), SourceSinkDataTestKit.getJsonSinkFunction("test"));
         } catch (IllegalArgumentException expectedException) {
             // test passes
             return;
@@ -105,7 +101,6 @@ public class OpensearchSinkITCase extends AbstractTestBase {
         source.addSink(
                 createOpensearchSinkForNode(
                         1,
-                        "invalid-cluster-name",
                         SourceSinkDataTestKit.getJsonSinkFunction("test"),
                         "123.123.123.123")); // incorrect ip address
 
@@ -119,13 +114,8 @@ public class OpensearchSinkITCase extends AbstractTestBase {
         fail();
     }
 
-    private String getClusterName() {
-        return "docker-cluster";
-    }
-
     private OpensearchSink<Tuple2<Integer, String>> createOpensearchSink(
             int bulkFlushMaxActions,
-            String clusterName,
             List<HttpHost> httpHosts,
             OpensearchSinkFunction<Tuple2<Integer, String>> opensearchSinkFunction) {
 
@@ -138,7 +128,6 @@ public class OpensearchSinkITCase extends AbstractTestBase {
 
     private OpensearchSink<Tuple2<Integer, String>> createOpensearchSinkForNode(
             int bulkFlushMaxActions,
-            String clusterName,
             OpensearchSinkFunction<Tuple2<Integer, String>> opensearchSinkFunction,
             String hostAddress) {
 
@@ -164,10 +153,7 @@ public class OpensearchSinkITCase extends AbstractTestBase {
 
         source.addSink(
                 createOpensearchSinkForNode(
-                        1,
-                        getClusterName(),
-                        functionFactory.apply(index),
-                        OS_CONTAINER.getHttpHostAddress()));
+                        1, functionFactory.apply(index), OS_CONTAINER.getHttpHostAddress()));
 
         env.execute("Opensearch Sink Test");
 

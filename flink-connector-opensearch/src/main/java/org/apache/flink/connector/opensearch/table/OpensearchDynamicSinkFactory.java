@@ -21,16 +21,16 @@ package org.apache.flink.connector.opensearch.table;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.configuration.ConfigOption;
-import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.connector.opensearch.sink.OpensearchSinkBuilder;
 import org.apache.flink.table.api.ValidationException;
+import org.apache.flink.table.api.config.TableConfigOptions;
 import org.apache.flink.table.catalog.Column;
 import org.apache.flink.table.catalog.ResolvedSchema;
 import org.apache.flink.table.connector.Projection;
 import org.apache.flink.table.connector.format.EncodingFormat;
 import org.apache.flink.table.connector.sink.DynamicTableSink;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.table.factories.DynamicTableFactory;
 import org.apache.flink.table.factories.DynamicTableSinkFactory;
 import org.apache.flink.table.factories.FactoryUtil;
 import org.apache.flink.table.factories.SerializationFormatFactory;
@@ -38,6 +38,7 @@ import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.logical.LogicalType;
 import org.apache.flink.util.StringUtils;
 
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -75,17 +76,21 @@ public class OpensearchDynamicSinkFactory implements DynamicTableSinkFactory {
     private final OpensearchSinkBuilderSupplier<RowData> sinkBuilderSupplier;
 
     public OpensearchDynamicSinkFactory() {
-        this.sinkBuilderSupplier = OpensearchSinkBuilder<RowData>::new;
+        this.sinkBuilderSupplier = OpensearchSinkBuilder::new;
     }
 
     @Override
     public DynamicTableSink createDynamicTableSink(Context context) {
         List<LogicalTypeWithIndex> primaryKeyLogicalTypesWithIndex =
                 getPrimaryKeyLogicalTypesWithIndex(context);
-        EncodingFormat<SerializationSchema<RowData>> format =
-                getValidatedEncodingFormat(this, context);
 
-        OpensearchConfiguration config = getConfiguration(context);
+        final FactoryUtil.TableFactoryHelper helper =
+                FactoryUtil.createTableFactoryHelper(this, context);
+        EncodingFormat<SerializationSchema<RowData>> format =
+                helper.discoverEncodingFormat(SerializationFormatFactory.class, FORMAT_OPTION);
+
+        OpensearchConfiguration config = getConfiguration(helper);
+        helper.validate();
         validateConfiguration(config);
 
         return new OpensearchDynamicSink(
@@ -94,15 +99,25 @@ public class OpensearchDynamicSinkFactory implements DynamicTableSinkFactory {
                 primaryKeyLogicalTypesWithIndex,
                 context.getPhysicalRowDataType(),
                 capitalize(FACTORY_IDENTIFIER),
-                sinkBuilderSupplier);
+                sinkBuilderSupplier,
+                getLocalTimeZoneId(context.getConfiguration()));
     }
 
-    OpensearchConfiguration getConfiguration(Context context) {
-        return new OpensearchConfiguration(
-                Configuration.fromMap(context.getCatalogTable().getOptions()));
+    private static ZoneId getLocalTimeZoneId(ReadableConfig readableConfig) {
+        final String zone = readableConfig.get(TableConfigOptions.LOCAL_TIME_ZONE);
+        final ZoneId zoneId =
+                TableConfigOptions.LOCAL_TIME_ZONE.defaultValue().equals(zone)
+                        ? ZoneId.systemDefault()
+                        : ZoneId.of(zone);
+
+        return zoneId;
     }
 
-    void validateConfiguration(OpensearchConfiguration config) {
+    private static OpensearchConfiguration getConfiguration(FactoryUtil.TableFactoryHelper helper) {
+        return new OpensearchConfiguration(helper.getOptions());
+    }
+
+    private static void validateConfiguration(OpensearchConfiguration config) {
         config.getHosts(); // validate hosts
         validate(
                 config.getIndex().length() >= 1,
@@ -145,23 +160,13 @@ public class OpensearchDynamicSinkFactory implements DynamicTableSinkFactory {
         }
     }
 
-    static void validate(boolean condition, Supplier<String> message) {
+    private static void validate(boolean condition, Supplier<String> message) {
         if (!condition) {
             throw new ValidationException(message.get());
         }
     }
 
-    EncodingFormat<SerializationSchema<RowData>> getValidatedEncodingFormat(
-            DynamicTableFactory factory, DynamicTableFactory.Context context) {
-        final FactoryUtil.TableFactoryHelper helper =
-                FactoryUtil.createTableFactoryHelper(factory, context);
-        final EncodingFormat<SerializationSchema<RowData>> format =
-                helper.discoverEncodingFormat(SerializationFormatFactory.class, FORMAT_OPTION);
-        helper.validate();
-        return format;
-    }
-
-    List<LogicalTypeWithIndex> getPrimaryKeyLogicalTypesWithIndex(Context context) {
+    private static List<LogicalTypeWithIndex> getPrimaryKeyLogicalTypesWithIndex(Context context) {
         DataType physicalRowDataType = context.getPhysicalRowDataType();
         int[] primaryKeyIndexes = context.getPrimaryKeyIndexes();
         if (primaryKeyIndexes.length != 0) {
@@ -190,6 +195,28 @@ public class OpensearchDynamicSinkFactory implements DynamicTableSinkFactory {
     @Override
     public Set<ConfigOption<?>> requiredOptions() {
         return Stream.of(HOSTS_OPTION, INDEX_OPTION).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<ConfigOption<?>> forwardOptions() {
+        return Stream.of(
+                        HOSTS_OPTION,
+                        INDEX_OPTION,
+                        PASSWORD_OPTION,
+                        USERNAME_OPTION,
+                        KEY_DELIMITER_OPTION,
+                        BULK_FLUSH_MAX_ACTIONS_OPTION,
+                        BULK_FLUSH_MAX_SIZE_OPTION,
+                        BULK_FLUSH_INTERVAL_OPTION,
+                        BULK_FLUSH_BACKOFF_TYPE_OPTION,
+                        BULK_FLUSH_BACKOFF_MAX_RETRIES_OPTION,
+                        BULK_FLUSH_BACKOFF_DELAY_OPTION,
+                        CONNECTION_PATH_PREFIX_OPTION,
+                        CONNECTION_REQUEST_TIMEOUT,
+                        CONNECTION_TIMEOUT,
+                        SOCKET_TIMEOUT,
+                        ALLOW_INSECURE)
+                .collect(Collectors.toSet());
     }
 
     @Override

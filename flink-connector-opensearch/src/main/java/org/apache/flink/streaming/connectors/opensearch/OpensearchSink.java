@@ -193,7 +193,7 @@ public class OpensearchSink<T> extends RichSinkFunction<T> implements Checkpoint
 
     /**
      * Number of pending action requests not yet acknowledged by Opensearch. This value is
-     * maintained only if {@link OpensearchSinkBase#flushOnCheckpoint} is {@code true}.
+     * maintained only if {@link OpensearchSink#flushOnCheckpoint} is {@code true}.
      *
      * <p>This is incremented whenever the user adds (or re-adds through the {@link
      * ActionRequestFailureHandler}) requests to the {@link RequestIndexer}. It is decremented for
@@ -236,7 +236,7 @@ public class OpensearchSink<T> extends RichSinkFunction<T> implements Checkpoint
         // we eagerly check if the user-provided sink function and failure handler is serializable;
         // otherwise, if they aren't serializable, users will merely get a non-informative error
         // message
-        // "OpensearchSinkBase is not serializable"
+        // "OpensearchSink is not serializable"
 
         checkArgument(
                 InstantiationUtil.isSerializable(opensearchSinkFunction),
@@ -325,7 +325,7 @@ public class OpensearchSink<T> extends RichSinkFunction<T> implements Checkpoint
 
     @Override
     public void open(Configuration parameters) throws Exception {
-        client = createClient(userConfig);
+        client = createClient();
         bulkProcessor = buildBulkProcessor(new BulkProcessorListener());
         requestIndexer =
                 new OpensearchBulkProcessorIndexer(
@@ -375,7 +375,7 @@ public class OpensearchSink<T> extends RichSinkFunction<T> implements Checkpoint
     }
 
     /** Build the {@link BulkProcessor}. */
-    protected BulkProcessor buildBulkProcessor(BulkProcessor.Listener listener) {
+    private BulkProcessor buildBulkProcessor(BulkProcessor.Listener listener) {
         checkNotNull(listener);
 
         BulkProcessor.Builder bulkProcessorBuilder =
@@ -412,7 +412,7 @@ public class OpensearchSink<T> extends RichSinkFunction<T> implements Checkpoint
      * @return The created client.
      * @throws IOException IOException
      */
-    private RestHighLevelClient createClient(Map<String, String> clientConfig) throws IOException {
+    private RestHighLevelClient createClient() throws IOException {
         RestClientBuilder builder =
                 RestClient.builder(httpHosts.toArray(new HttpHost[httpHosts.size()]));
         restClientFactory.configureRestClientBuilder(builder);
@@ -426,9 +426,9 @@ public class OpensearchSink<T> extends RichSinkFunction<T> implements Checkpoint
     /**
      * Verify the client connection by making a test request/ping to the Opensearch cluster.
      *
-     * <p>Called by {@link OpensearchSinkBase#open(org.apache.flink.configuration.Configuration)}
-     * after creating the client. This makes sure the underlying client is closed if the connection
-     * is not successful and preventing thread leak.
+     * <p>Called by {@link OpensearchSink#open(org.apache.flink.configuration.Configuration)} after
+     * creating the client. This makes sure the underlying client is closed if the connection is not
+     * successful and preventing thread leak.
      *
      * @param client the Opensearch client.
      */

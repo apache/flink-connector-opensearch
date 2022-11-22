@@ -88,4 +88,8 @@ public class OpensearchSink<IN> implements Sink<IN> {
                 context.metricGroup(),
                 context.getMailboxExecutor());
     }
+
+    DeliveryGuarantee getDeliveryGuarantee() {
+        return deliveryGuarantee;
+    }
 }

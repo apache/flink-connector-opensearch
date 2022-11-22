@@ -52,8 +52,7 @@ public class OpensearchSinkE2ECase extends SinkTestSuiteBase<ComparableTuple2<In
     @TestSemantics
     CheckpointingMode[] semantics = new CheckpointingMode[] {CheckpointingMode.EXACTLY_ONCE};
 
-    @TestEnv
-    protected FlinkContainerTestEnvironment flink = new FlinkContainerTestEnvironment(1, 6);
+    @TestEnv FlinkContainerTestEnvironment flink = new FlinkContainerTestEnvironment(1, 6);
 
     public OpensearchSinkE2ECase() throws Exception {}
 
