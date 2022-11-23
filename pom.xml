@@ -65,7 +65,6 @@ under the License.
 		<flink.shaded.version>15.0</flink.shaded.version>
 		
 		<jackson-bom.version>2.13.4.20221013</jackson-bom.version>
-		<junit4.version>4.13.2</junit4.version>
 		<junit5.version>5.8.1</junit5.version>
 		<assertj.version>3.21.0</assertj.version>
 		<archunit.version>0.22.0</archunit.version>
@@ -312,12 +311,6 @@ under the License.
 				<version>${junit5.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
-			</dependency>
-
-			<dependency>
-				<groupId>junit</groupId>
-				<artifactId>junit</artifactId>
-				<version>${junit4.version}</version>
 			</dependency>
 
 			<dependency>

@@ -18,7 +18,7 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
-import org.apache.flink.annotation.Internal;
+import org.apache.flink.annotation.PublicEvolving;
 
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.index.IndexRequest;
@@ -28,7 +28,7 @@ import org.opensearch.action.update.UpdateRequest;
  * Users add multiple delete, index or update requests to a {@link RequestIndexer} to prepare them
  * for sending to an Opensearch cluster.
  */
-@Internal
+@PublicEvolving
 public interface RequestIndexer {
     /**
      * Add multiple {@link DeleteRequest} to the indexer to prepare for sending requests to

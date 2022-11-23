@@ -21,12 +21,9 @@ package org.apache.flink.architecture;
 import org.apache.flink.architecture.common.ImportOptions;
 
 import com.tngtech.archunit.core.importer.ImportOption;
-import com.tngtech.archunit.core.importer.Location;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.junit.ArchTests;
-
-import java.util.regex.Pattern;
 
 /** Architecture tests for test code. */
 @AnalyzeClasses(
@@ -36,7 +33,6 @@ import java.util.regex.Pattern;
         },
         importOptions = {
             ImportOption.OnlyIncludeTests.class,
-            TestCodeArchitectureTest.IncludeES7ImportOption.class,
             ImportOptions.ExcludeScalaImportOption.class,
             ImportOptions.ExcludeShadedImportOption.class
         })
@@ -44,14 +40,4 @@ public class TestCodeArchitectureTest {
 
     @ArchTest
     public static final ArchTests COMMON_TESTS = ArchTests.in(TestCodeArchitectureTestBase.class);
-
-    /** Only include ES7 related locations. */
-    public static final class IncludeES7ImportOption implements ImportOption {
-        private static final Pattern OPENSEARCH = Pattern.compile(".*opensearch.*");
-
-        @Override
-        public boolean includes(Location location) {
-            return location.matches(OPENSEARCH);
-        }
-    }
 }

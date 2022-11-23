@@ -19,6 +19,7 @@
 package org.apache.flink.connector.opensearch.sink;
 
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.connector.base.DeliveryGuarantee;
@@ -85,6 +86,7 @@ public class OpensearchSink<IN> implements Sink<IN> {
                 context.getMailboxExecutor());
     }
 
+    @VisibleForTesting
     DeliveryGuarantee getDeliveryGuarantee() {
         return deliveryGuarantee;
     }
