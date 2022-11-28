@@ -17,7 +17,6 @@
 
 package org.apache.flink.streaming.connectors.opensearch;
 
-import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
@@ -71,8 +70,11 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * OpensearchSinkFunction} for processing.
  *
  * @param <T> Type of the elements handled by this sink
+ * @deprecated This sink has been deprecated in favor of {@link
+ *     org.apache.flink.connector.opensearch.sink.OpensearchSink}
  */
-@Internal
+@Deprecated
+@PublicEvolving
 public class OpensearchSink<T> extends RichSinkFunction<T> implements CheckpointedFunction {
     private static final long serialVersionUID = -1007596293618451942L;
     private static final Logger LOG = LoggerFactory.getLogger(OpensearchSink.class);
