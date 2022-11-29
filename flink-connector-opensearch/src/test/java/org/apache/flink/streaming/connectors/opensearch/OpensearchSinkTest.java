@@ -56,8 +56,9 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -68,6 +69,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class OpensearchSinkTest {
     private HttpServer server;
     private final Deque<Consumer<HttpResponse>> responses = new ConcurrentLinkedDeque<>();
+    private final Lock lock = new ReentrantLock();
+    private final Condition flushed = lock.newCondition();
 
     @BeforeEach
     public void setUp() throws IOException {
@@ -79,7 +82,15 @@ public class OpensearchSinkTest {
                         return (req, resp, context) -> resp.setStatusCode(200);
                     } else if (method.equalsIgnoreCase("POST")) {
                         // Bulk responses are configured per test case
-                        return (req, resp, context) -> responses.poll().accept(resp);
+                        return (req, resp, context) -> {
+                            lock.lock();
+                            try {
+                                responses.poll().accept(resp);
+                                flushed.signalAll();
+                            } finally {
+                                lock.unlock();
+                            }
+                        };
                     } else {
                         return null;
                     }
@@ -212,7 +223,7 @@ public class OpensearchSinkTest {
         testHarness.processElement(new StreamRecord<>("msg-1"));
 
         // Await for flush to be complete
-        awaitForCondition(() -> responses.size() == 1);
+        awaitForFlushToFinish();
 
         // setup the requests to be flushed in the snapshot
         testHarness.processElement(new StreamRecord<>("msg-2"));
@@ -230,7 +241,7 @@ public class OpensearchSinkTest {
         snapshotThread.start();
 
         // Await for flush to be complete
-        awaitForCondition(responses::isEmpty);
+        awaitForFlushToFinish();
 
         assertThatThrownBy(snapshotThread::sync)
                 .getCause()
@@ -333,7 +344,7 @@ public class OpensearchSinkTest {
         testHarness.processElement(new StreamRecord<>("msg-1"));
 
         // Await for flush to be complete
-        awaitForCondition(() -> responses.size() == 1);
+        awaitForFlushToFinish();
 
         // setup the requests to be flushed in the snapshot
         testHarness.processElement(new StreamRecord<>("msg-2"));
@@ -349,7 +360,7 @@ public class OpensearchSinkTest {
         snapshotThread.start();
 
         // Await for flush to be complete
-        awaitForCondition(responses::isEmpty);
+        awaitForFlushToFinish();
 
         assertThatThrownBy(snapshotThread::sync)
                 .getCause()
@@ -362,7 +373,7 @@ public class OpensearchSinkTest {
      * checkpoints; we set a timeout because the test will not finish if the logic is broken.
      */
     @Test
-    @Timeout(50)
+    @Timeout(5)
     public void testAtLeastOnceSink() throws Throwable {
         final OpensearchSink.Builder<String> builder =
                 new OpensearchSink.Builder<>(
@@ -414,7 +425,7 @@ public class OpensearchSinkTest {
         snapshotThread.start();
 
         // Await for flush to be complete
-        awaitForCondition(() -> responses.size() == 1);
+        awaitForFlushToFinish();
 
         // since the previous flush should have resulted in a request re-add from the failure
         // handler,
@@ -427,7 +438,7 @@ public class OpensearchSinkTest {
         awaitForCondition(() -> sink.getNumPendingRequests() == 1);
 
         // Await for flush to be complete
-        awaitForCondition(responses::isEmpty);
+        awaitForFlushToFinish();
 
         // the snapshot should finish with no exceptions
         snapshotThread.sync();
@@ -558,9 +569,18 @@ public class OpensearchSinkTest {
         };
     }
 
-    private static void awaitForCondition(Supplier<Boolean> condition) {
+    private static void awaitForCondition(Supplier<Boolean> condition) throws InterruptedException {
         while (!condition.get()) {
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+            Thread.sleep(10);
+        }
+    }
+
+    private void awaitForFlushToFinish() throws InterruptedException {
+        lock.lock();
+        try {
+            flushed.await();
+        } finally {
+            lock.unlock();
         }
     }
 }
