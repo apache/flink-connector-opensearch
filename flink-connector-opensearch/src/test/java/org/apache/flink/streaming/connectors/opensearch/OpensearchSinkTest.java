@@ -56,7 +56,10 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -209,7 +212,7 @@ public class OpensearchSinkTest {
         testHarness.processElement(new StreamRecord<>("msg-1"));
 
         // Await for flush to be complete
-        awaitForFlushToFinish(1);
+        awaitForCondition(() -> responses.size() == 1);
 
         // setup the requests to be flushed in the snapshot
         testHarness.processElement(new StreamRecord<>("msg-2"));
@@ -227,7 +230,7 @@ public class OpensearchSinkTest {
         snapshotThread.start();
 
         // Await for flush to be complete
-        awaitForFlushToFinish(0);
+        awaitForCondition(responses::isEmpty);
 
         assertThatThrownBy(snapshotThread::sync)
                 .getCause()
@@ -330,7 +333,7 @@ public class OpensearchSinkTest {
         testHarness.processElement(new StreamRecord<>("msg-1"));
 
         // Await for flush to be complete
-        awaitForFlushToFinish(1);
+        awaitForCondition(() -> responses.size() == 1);
 
         // setup the requests to be flushed in the snapshot
         testHarness.processElement(new StreamRecord<>("msg-2"));
@@ -346,7 +349,7 @@ public class OpensearchSinkTest {
         snapshotThread.start();
 
         // Await for flush to be complete
-        awaitForFlushToFinish(0);
+        awaitForCondition(responses::isEmpty);
 
         assertThatThrownBy(snapshotThread::sync)
                 .getCause()
@@ -359,16 +362,15 @@ public class OpensearchSinkTest {
      * checkpoints; we set a timeout because the test will not finish if the logic is broken.
      */
     @Test
-    @Timeout(5)
+    @Timeout(50)
     public void testAtLeastOnceSink() throws Throwable {
         final OpensearchSink.Builder<String> builder =
                 new OpensearchSink.Builder<>(
                         Arrays.asList(new HttpHost("localhost", server.getLocalPort())),
                         new SimpleSinkFunction<String>());
         builder.setBulkFlushInterval(500);
-        builder.setFailureHandler(
-                new DummyRetryFailureHandler()); // use a failure handler that simply
-        // re-adds requests
+        // use a failure handler that simply re-adds requests
+        builder.setFailureHandler(new DummyRetryFailureHandler());
 
         final OpensearchSink<String> sink = builder.build();
         final OneInputStreamOperatorTestHarness<String, Object> testHarness =
@@ -389,6 +391,14 @@ public class OpensearchSinkTest {
                                         "1",
                                         new Exception("artificial failure for record")))));
 
+        responses.add(
+                createResponse(
+                        new BulkItemResponse(
+                                2,
+                                OpType.INDEX,
+                                new IndexResponse(
+                                        new ShardId("test", "-", 0), "_doc", "2", 0, 0, 1, true))));
+
         testHarness.processElement(new StreamRecord<>("msg"));
 
         // current number of pending request should be 1 due to the re-add
@@ -404,26 +414,20 @@ public class OpensearchSinkTest {
         snapshotThread.start();
 
         // Await for flush to be complete
-        awaitForFlushToFinish(0);
+        awaitForCondition(() -> responses.size() == 1);
 
         // since the previous flush should have resulted in a request re-add from the failure
         // handler,
         // we should have flushed again, and eventually be blocked before snapshot triggers the 2nd
         // flush
 
-        responses.add(
-                createResponse(
-                        new BulkItemResponse(
-                                2,
-                                OpType.INDEX,
-                                new IndexResponse(
-                                        new ShardId("test", "-", 0), "_doc", "2", 0, 0, 1, true))));
-
-        // current number of pending request should be 1 due to the re-add
-        assertThat(sink.getNumPendingRequests()).isEqualTo(1);
+        // current number of pending request should be 1 due to the re-add, since the
+        // failureRequestIndexer will be called only on the next bulk flush interval, we may need
+        // to wait for numPendingRequests to be updated.
+        awaitForCondition(() -> sink.getNumPendingRequests() == 1);
 
         // Await for flush to be complete
-        awaitForFlushToFinish(0);
+        awaitForCondition(responses::isEmpty);
 
         // the snapshot should finish with no exceptions
         snapshotThread.sync();
@@ -536,7 +540,7 @@ public class OpensearchSinkTest {
         }
     }
 
-    private Consumer<HttpResponse> createResponse(BulkItemResponse item) {
+    private static Consumer<HttpResponse> createResponse(BulkItemResponse item) {
         return response -> {
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 response.setStatusCode(200);
@@ -554,9 +558,9 @@ public class OpensearchSinkTest {
         };
     }
 
-    private void awaitForFlushToFinish(int n) throws InterruptedException {
-        while (responses.size() > n) {
-            Thread.sleep(10);
+    private static void awaitForCondition(Supplier<Boolean> condition) {
+        while (!condition.get()) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
     }
 }
