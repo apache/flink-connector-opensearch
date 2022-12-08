@@ -29,7 +29,7 @@ under the License.
 
 	<groupId>org.apache.flink</groupId>
 	<artifactId>flink-connector-opensearch-parent</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT</version>
 	<name>Flink : Connectors : Opensearch : Parent</name>
 	<packaging>pom</packaging>
 	<url>https://flink.apache.org</url>
@@ -58,9 +58,6 @@ under the License.
 	</modules>
 
 	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
 		<flink.version>1.16.0</flink.version>
 		<flink.shaded.version>15.0</flink.shaded.version>
 		
@@ -76,8 +73,6 @@ under the License.
 
 		<slf4j.version>1.7.36</slf4j.version>
 		<log4j.version>2.17.2</log4j.version>
-
-		<test.randomization.seed/>
 
 		<flink.parent.artifactId>flink-connector-opensearch-parent</flink.parent.artifactId>
 	</properties>
