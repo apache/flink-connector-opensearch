@@ -2,9 +2,8 @@
 title: Opensearch
 weight: 7
 type: docs
-aliases:
-  - /dev/table/connectors/opensearch.html
 ---
+
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -137,17 +136,16 @@ Connector Options
       <td>Password used to connect to Opensearch instance. If <code>username</code> is configured, this option must be configured with non-empty string as well.</td>
     </tr>
     <tr>
-      <td><h5>failure-handler</h5></td>
+      <td><h5>sink.delivery-guarantee</h5></td>
       <td>optional</td>
-      <td>yes</td>
-      <td style="word-wrap: break-word;">fail</td>
+      <td>no</td>
+      <td style="word-wrap: break-word;">AT_LEAST_ONCE</td>
       <td>String</td>
-      <td>Failure handling strategy in case a request to Opensearch fails. Valid strategies are:
+      <td>Optional delivery guarantee when committing. Valid values are:
       <ul>
-        <li><code>fail</code>: throws an exception if a request fails and thus causes a job failure.</li>
-        <li><code>ignore</code>: ignores failures and drops the request.</li>
-        <li><code>retry-rejected</code>: re-adds requests that have failed due to queue capacity saturation.</li>
-        <li>custom class name: for failure handling with a `ActionRequestFailureHandler` subclass.</li>
+        <li><code>EXACTLY_ONCE</code>: records are only delivered exactly-once also under failover scenarios.</li>
+        <li><code>AT_LEAST_ONCE</code>: records are ensured to be delivered but it may happen that the same record is delivered multiple times.</li>
+        <li><code>NONE</code>:  records are delivered on a best effort basis.</li>
       </ul>
       </td>
     </tr>
@@ -230,6 +228,30 @@ Connector Options
       <td style="word-wrap: break-word;">(none)</td>
       <td>String</td>
       <td>Prefix string to be added to every REST communication, e.g., <code>'/v1'</code>.</td>
+    </tr>
+    <tr>
+      <td><h5>connection.request-timeout</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">(none)</td>
+      <td>Duration</td>
+      <td>The timeout for requesting a connection from the connection manager.</td>
+    </tr>
+    <tr>
+      <td><h5>connection.timeout</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">(none)</td>
+      <td>Duration</td>
+      <td>The timeout for establishing a connection.</td>
+    </tr>
+    <tr>
+      <td><h5>socket.timeout</h5></td>
+      <td>optional</td>
+      <td>yes</td>
+      <td style="word-wrap: break-word;">(none)</td>
+      <td>Duration</td>
+      <td>The socket timeout (SO_TIMEOUT) for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets.</td>
     </tr>
     <tr>
       <td><h5>format</h5></td>

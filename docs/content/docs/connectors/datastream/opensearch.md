@@ -2,10 +2,8 @@
 title: Opensearch
 weight: 5
 type: docs
-aliases:
-  - /dev/connectors/opensearch.html
-  - /apis/streaming/connectors/opensearch.html
 ---
+
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -65,7 +63,7 @@ Instructions for setting up an Opensearch cluster can be found
 
 The example below shows how to configure and create a sink:
 
-{{< tabs "51732edd-4218-470e-adad-b1ebb4021ae4" >}}
+{{< tabs "a1732edd-4218-470e-adad-b1ebb4021a12" >}}
 {{< tab "Java" >}}
 
 ```java
@@ -132,44 +130,6 @@ def createIndexRequest(element: (String)): IndexRequest = {
 ```
 
 {{< /tab >}}
-{{< tab "Python" >}}
-Opensearch static index:
-```python
-from pyflink.datastream.connectors.opensearch import OpensearchSinkBuilder, OpensearchEmitter
-
-env = StreamExecutionEnvironment.get_execution_environment()
-env.add_jars(OPENSEARCH_SQL_CONNECTOR_PATH)
-
-input = ...
-
-# The set_bulk_flush_max_actions instructs the sink to emit after every element, otherwise they would be buffered
-os_sink = OpensearchSinkBuilder() \
-    .set_bulk_flush_max_actions(1) \
-    .set_emitter(OpensearchEmitter.static('foo', 'id')) \
-    .set_hosts(['localhost:9200']) \
-    .build()
-
-input.sink_to(os_sink).name('os sink')
-```
-
-Opensearch dynamic index:
-```python
-from pyflink.datastream.connectors.opensearch import OpensearchSinkBuilder, OpensearchEmitter
-
-env = StreamExecutionEnvironment.get_execution_environment()
-env.add_jars(OPENSEARCH_SQL_CONNECTOR_PATH)
-
-input = ...
-
-os_sink = OpensearchSinkBuilder() \
-    .set_emitter(OpensearchEmitter.dynamic_index('name', 'id')) \
-    .set_hosts(['localhost:9200']) \
-    .build()
-
-input.sink_to(os_sink).name('os dynamic index sink')
-```
-
-{{< /tab >}}
 {{< /tabs >}}
 
 Note that the example only demonstrates performing a single index
@@ -196,7 +156,7 @@ More details on checkpoints and fault tolerance are in the [fault tolerance docs
 
 To use fault tolerant Opensearch Sinks, checkpointing of the topology needs to be enabled at the execution environment:
 
-{{< tabs "d00d1e93-4844-40d7-b0ec-9ec37e73145e" >}}
+{{< tabs "aa0d1e93-4844-40d7-b0ec-9ec37e731a5f" >}}
 {{< tab "Java" >}}
 ```java
 final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -207,15 +167,6 @@ env.enableCheckpointing(5000); // checkpoint every 5000 msecs
 ```scala
 val env = StreamExecutionEnvironment.getExecutionEnvironment()
 env.enableCheckpointing(5000) // checkpoint every 5000 msecs
-```
-
-{{< /tab >}}
-{{< tab "Python" >}}
-
-```python
-env = StreamExecutionEnvironment.get_execution_environment()
-# checkpoint every 5000 msecs
-env.enable_checkpointing(5000)
 ```
 
 {{< /tab >}}
@@ -239,7 +190,7 @@ The Flink Opensearch Sink allows the user to retry requests by specifying a back
 
 Below is an example:
 
-{{< tabs "ddb958b3-5dd5-476e-b946-ace3335628b2" >}}
+{{< tabs "adb958b3-5dd5-476e-b946-ace3335628ea" >}}
 {{< tab "Java" >}}
 ```java
 DataStream<String> input = ...;
@@ -267,22 +218,6 @@ input.sinkTo(
     // This enables an exponential backoff retry mechanism, with a maximum of 5 retries and an initial delay of 1000 milliseconds
     .setBulkFlushBackoffStrategy(FlushBackoffType.EXPONENTIAL, 5, 1000)
     .build())
-```
-
-{{< /tab >}}
-{{< tab "Python" >}}
-
-```python
-input = ...
-
-# This enables an exponential backoff retry mechanism, with a maximum of 5 retries and an initial delay of 1000 milliseconds
-os_sink = OpensearchSinkBuilder() \
-    .set_bulk_flush_backoff_strategy(FlushBackoffType.EXPONENTIAL, 5, 1000) \
-    .set_emitter(OpensearchEmitter.static_index('foo', 'id')) \
-    .set_hosts(['localhost:9200']) \
-    .build()
-
-input.sink_to(os_sink).name('os sink')
 ```
 
 {{< /tab >}}
