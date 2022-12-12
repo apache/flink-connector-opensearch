@@ -143,7 +143,7 @@ public class OpensearchConnectorOptions {
     public static final ConfigOption<DeliveryGuarantee> DELIVERY_GUARANTEE_OPTION =
             ConfigOptions.key("sink.delivery-guarantee")
                     .enumType(DeliveryGuarantee.class)
-                    .defaultValue(DeliveryGuarantee.NONE)
+                    .defaultValue(DeliveryGuarantee.AT_LEAST_ONCE)
                     .withDescription("Optional delivery guarantee when committing.");
 
     public static final ConfigOption<Boolean> ALLOW_INSECURE =
