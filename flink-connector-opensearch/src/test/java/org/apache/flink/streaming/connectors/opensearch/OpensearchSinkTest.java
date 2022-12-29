@@ -130,7 +130,6 @@ public class OpensearchSinkTest {
                                 OpType.INDEX,
                                 new Failure(
                                         "test",
-                                        "_doc",
                                         "1",
                                         new Exception("artificial failure for record")))));
         testHarness.open();
@@ -169,7 +168,6 @@ public class OpensearchSinkTest {
                                 OpType.INDEX,
                                 new Failure(
                                         "test",
-                                        "_doc",
                                         "1",
                                         new Exception("artificial failure for record")))));
         testHarness.processElement(new StreamRecord<>("msg"));
@@ -207,7 +205,7 @@ public class OpensearchSinkTest {
                                 1,
                                 OpType.INDEX,
                                 new IndexResponse(
-                                        new ShardId("test", "-", 0), "_doc", "1", 0, 0, 1, true))));
+                                        new ShardId("test", "-", 0), "1", 0, 0, 1, true))));
 
         responses.add(
                 createResponse(
@@ -216,7 +214,6 @@ public class OpensearchSinkTest {
                                 OpType.INDEX,
                                 new Failure(
                                         "test",
-                                        "_doc",
                                         "2",
                                         new Exception("artificial failure for record")))));
 
@@ -335,7 +332,7 @@ public class OpensearchSinkTest {
                                 1,
                                 OpType.INDEX,
                                 new IndexResponse(
-                                        new ShardId("test", "-", 0), "_doc", "1", 0, 0, 1, true))));
+                                        new ShardId("test", "-", 0), "1", 0, 0, 1, true))));
 
         // Let the whole bulk request fail
         responses.add(response -> response.setStatusCode(500));
@@ -398,7 +395,6 @@ public class OpensearchSinkTest {
                                 OpType.INDEX,
                                 new Failure(
                                         "test",
-                                        "_doc",
                                         "1",
                                         new Exception("artificial failure for record")))));
 
@@ -408,7 +404,7 @@ public class OpensearchSinkTest {
                                 2,
                                 OpType.INDEX,
                                 new IndexResponse(
-                                        new ShardId("test", "-", 0), "_doc", "2", 0, 0, 1, true))));
+                                        new ShardId("test", "-", 0), "2", 0, 0, 1, true))));
 
         testHarness.processElement(new StreamRecord<>("msg"));
 
@@ -474,7 +470,6 @@ public class OpensearchSinkTest {
                                 OpType.INDEX,
                                 new Failure(
                                         "test",
-                                        "_doc",
                                         "1",
                                         new Exception("artificial failure for record")))));
 
@@ -514,7 +509,7 @@ public class OpensearchSinkTest {
             Map<java.lang.String, Object> json = new HashMap<>();
             json.put("data", element);
 
-            indexer.add(Requests.indexRequest().index("index").type("type").id("id").source(json));
+            indexer.add(Requests.indexRequest().index("index").id("id").source(json));
         }
     }
 
