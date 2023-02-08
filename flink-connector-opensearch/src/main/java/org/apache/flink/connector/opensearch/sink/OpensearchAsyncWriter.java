@@ -20,6 +20,7 @@ package org.apache.flink.connector.opensearch.sink;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.connector.base.sink.throwable.FatalExceptionClassifier;
 import org.apache.flink.connector.base.sink.writer.AsyncSinkWriter;
 import org.apache.flink.connector.base.sink.writer.BufferedRequestState;
 import org.apache.flink.connector.base.sink.writer.ElementConverter;
@@ -34,6 +35,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContexts;
+import org.opensearch.OpenSearchException;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.bulk.BulkItemResponse;
 import org.opensearch.action.bulk.BulkRequest;
@@ -46,6 +48,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -72,6 +76,17 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
     private final RestHighLevelClient client;
     private final Counter numRecordsOutErrorsCounter;
     private volatile boolean closed = false;
+
+    private static final FatalExceptionClassifier OPENSEARCH_FATAL_EXCEPTION_CLASSIFIER =
+            FatalExceptionClassifier.createChain(
+                    new FatalExceptionClassifier(
+                            err ->
+                                    err instanceof NoRouteToHostException
+                                            || err instanceof ConnectException,
+                            err ->
+                                    new OpenSearchException(
+                                            "Could not connect to Opensearch cluster using provided hosts",
+                                            err)));
 
     /**
      * Constructor creating an Opensearch async writer.
@@ -186,12 +201,31 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
         }
     }
 
+    private boolean isRetryable(Throwable err) {
+        // isFatal() is really isNotFatal()
+        if (!OPENSEARCH_FATAL_EXCEPTION_CLASSIFIER.isFatal(err, getFatalExceptionCons())) {
+            return false;
+        }
+        return true;
+    }
+
     private void handleFullyFailedBulkRequest(
             Throwable err,
             List<DocSerdeRequest<?>> requestEntries,
             Consumer<List<DocSerdeRequest<?>>> requestResult) {
+        final boolean retryable = isRetryable(err.getCause());
+
+        LOG.warn(
+                "Opensearch AsyncWwriter failed to persist {} entries (retryable = {})",
+                requestEntries.size(),
+                retryable,
+                err);
+
         numRecordsOutErrorsCounter.inc(requestEntries.size());
-        requestResult.accept(requestEntries);
+
+        if (retryable) {
+            requestResult.accept(requestEntries);
+        }
     }
 
     private void handlePartiallyFailedBulkRequests(
