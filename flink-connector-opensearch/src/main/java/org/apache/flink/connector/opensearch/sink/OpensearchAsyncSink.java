@@ -54,13 +54,13 @@ public class OpensearchAsyncSink<InputT> extends AsyncSinkBase<InputT, DocSerdeR
      * Constructor creating an Opensearch async sink.
      *
      * @param maxBatchSize the maximum size of a batch of entries that may be sent
-     * @param maxInFlightRequests he maximum number of in flight requests that may exist, if any
+     * @param maxInFlightRequests the maximum number of in flight requests that may exist, if any
      *     more in flight requests need to be initiated once the maximum has been reached, then it
      *     will be blocked until some have completed
      * @param maxBufferedRequests the maximum number of elements held in the buffer, requests to add
      *     elements will be blocked while the number of elements in the buffer is at the maximum
-     * @param maxBatchSizeInBytes the maximum size of a batch of entries that may be sent to KDS
-     *     measured in bytes
+     * @param maxBatchSizeInBytes the maximum size of a batch of entries that may be sent to
+     *     OpenSearch measured in bytes
      * @param maxTimeInBufferMS the maximum amount of time an entry is allowed to live in the
      *     buffer, if any element reaches this age, the entire buffer will be flushed immediately
      * @param maxRecordSizeInBytes the maximum size of a record the sink will accept into the

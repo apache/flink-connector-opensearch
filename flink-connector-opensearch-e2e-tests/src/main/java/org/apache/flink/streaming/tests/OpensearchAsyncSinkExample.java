@@ -29,9 +29,6 @@ import org.apache.flink.util.Collector;
 import org.apache.http.HttpHost;
 import org.opensearch.action.index.IndexRequest;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /** End to end test for OpensearchAsyncSink. */
 public class OpensearchAsyncSinkExample {
 
@@ -62,12 +59,9 @@ public class OpensearchAsyncSinkExample {
                                     }
                                 });
 
-        List<HttpHost> httpHosts = new ArrayList<>();
-        httpHosts.add(new HttpHost("127.0.0.1", 9200, "http"));
-
         OpensearchAsyncSinkBuilder<Tuple2<String, String>> osSinkBuilder =
                 OpensearchAsyncSink.<Tuple2<String, String>>builder()
-                        .setHosts(new HttpHost("localhost:9200"))
+                        .setHosts(new HttpHost("localhost", 9200, "http"))
                         .setElementConverter(
                                 (element, context) ->
                                         new IndexRequest("my-index")

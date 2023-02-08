@@ -71,11 +71,11 @@ class OpensearchAsyncSinkBuilderTest {
     @Test
     void testThrowIfSetInvalidTimeouts() {
         assertThatThrownBy(() -> createEmptyBuilder().setConnectionRequestTimeout(-1).build())
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> createEmptyBuilder().setConnectionTimeout(-1).build())
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> createEmptyBuilder().setSocketTimeout(-1).build())
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     private OpensearchAsyncSinkBuilder<Object> createEmptyBuilder() {

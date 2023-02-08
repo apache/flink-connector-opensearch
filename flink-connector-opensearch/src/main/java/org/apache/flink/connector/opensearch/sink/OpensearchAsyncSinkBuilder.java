@@ -27,6 +27,7 @@ import org.opensearch.action.DocWriteRequest;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -84,7 +85,7 @@ public class OpensearchAsyncSinkBuilder<InputT>
      */
     public OpensearchAsyncSinkBuilder<InputT> setHosts(HttpHost... hosts) {
         checkNotNull(hosts);
-        checkState(hosts.length > 0, "Hosts cannot be empty.");
+        checkArgument(hosts.length > 0, "Hosts cannot be empty.");
         this.hosts = Arrays.asList(hosts);
         return this;
     }
@@ -97,6 +98,7 @@ public class OpensearchAsyncSinkBuilder<InputT>
      */
     public OpensearchAsyncSinkBuilder<InputT> setConnectionUsername(String username) {
         checkNotNull(username);
+        checkArgument(!username.trim().isEmpty(), "Username cannot be empty");
         this.username = username;
         return this;
     }
@@ -109,6 +111,7 @@ public class OpensearchAsyncSinkBuilder<InputT>
      */
     public OpensearchAsyncSinkBuilder<InputT> setConnectionPassword(String password) {
         checkNotNull(password);
+        checkArgument(!password.trim().isEmpty(), "Password cannot be empty");
         this.password = password;
         return this;
     }
@@ -129,11 +132,12 @@ public class OpensearchAsyncSinkBuilder<InputT>
      * Sets the timeout for requesting the connection of the Opensearch cluster from the connection
      * manager.
      *
-     * @param timeout for the connection request
+     * @param timeout timeout for the connection request (in milliseconds)
      * @return this builder
      */
     public OpensearchAsyncSinkBuilder<InputT> setConnectionRequestTimeout(int timeout) {
-        checkState(timeout >= 0, "Connection request timeout must be larger than or equal to 0.");
+        checkArgument(
+                timeout >= 0, "Connection request timeout must be larger than or equal to 0.");
         this.connectionRequestTimeout = timeout;
         return this;
     }
@@ -141,12 +145,37 @@ public class OpensearchAsyncSinkBuilder<InputT>
     /**
      * Sets the timeout for establishing a connection of the Opensearch cluster.
      *
-     * @param timeout for the connection
+     * @param timeout timeout for the connection (in milliseconds)
      * @return this builder
      */
     public OpensearchAsyncSinkBuilder<InputT> setConnectionTimeout(int timeout) {
-        checkState(timeout >= 0, "Connection timeout must be larger than or equal to 0.");
+        checkArgument(timeout >= 0, "Connection timeout must be larger than or equal to 0.");
         this.connectionTimeout = timeout;
+        return this;
+    }
+
+    /**
+     * Sets the timeout for establishing a connection of the Opensearch cluster.
+     *
+     * @param timeout timeout for the connection (in milliseconds)
+     * @param timeUnit timeout time unit
+     * @return this builder
+     */
+    public OpensearchAsyncSinkBuilder<InputT> setConnectionTimeout(int timeout, TimeUnit timeUnit) {
+        checkNotNull(timeUnit, "TimeUnit cannot be null.");
+        return setConnectionTimeout((int) timeUnit.toMillis(timeout));
+    }
+
+    /**
+     * Sets the timeout for waiting for data or, put differently, a maximum period inactivity
+     * between two consecutive data packets.
+     *
+     * @param timeout timeout for the socket (in milliseconds)
+     * @return this builder
+     */
+    public OpensearchAsyncSinkBuilder<InputT> setSocketTimeout(int timeout) {
+        checkArgument(timeout >= 0, "Socket timeout must be larger than or equal to 0.");
+        this.socketTimeout = timeout;
         return this;
     }
 
@@ -154,13 +183,13 @@ public class OpensearchAsyncSinkBuilder<InputT>
      * Sets the timeout for waiting for data or, put differently, a maximum period inactivity
      * between two consecutive data packets.
      *
-     * @param timeout for the socket
+     * @param timeout timeout for the socket
+     * @param timeUnit timeout time unit
      * @return this builder
      */
-    public OpensearchAsyncSinkBuilder<InputT> setSocketTimeout(int timeout) {
-        checkState(timeout >= 0, "Socket timeout must be larger than or equal to 0.");
-        this.socketTimeout = timeout;
-        return this;
+    public OpensearchAsyncSinkBuilder<InputT> setSocketTimeout(int timeout, TimeUnit timeUnit) {
+        checkNotNull(timeUnit, "TimeUnit cannot be null.");
+        return setSocketTimeout((int) timeUnit.toMillis(timeout));
     }
 
     /**
@@ -177,8 +206,6 @@ public class OpensearchAsyncSinkBuilder<InputT>
 
     @Override
     public OpensearchAsyncSink<InputT> build() {
-        checkArgument(!hosts.isEmpty(), "Hosts cannot be empty.");
-
         return new OpensearchAsyncSink<InputT>(
                 nonNullOrDefault(
                         getMaxBatchSize(),
