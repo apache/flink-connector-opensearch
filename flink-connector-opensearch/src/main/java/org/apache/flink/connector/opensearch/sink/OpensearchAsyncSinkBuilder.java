@@ -52,6 +52,17 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 @PublicEvolving
 public class OpensearchAsyncSinkBuilder<InputT>
         extends AsyncSinkBaseBuilder<InputT, DocSerdeRequest, OpensearchAsyncSinkBuilder<InputT>> {
+    private static final int DEFAULT_MAX_RECORD_SIZE_BYTES = 1 * 1024 * 1024; /* 1Mb */
+    // Source: OpensearchConnectorOptions.BULK_FLUSH_INTERVAL_OPTION
+    private static final int DEFAULT_MAX_TIME_IN_BUFFER_MS = 1000;
+    // Source: OpensearchConnectorOptions.BULK_FLUSH_MAX_SIZE_OPTION
+    private static final int DEFAULT_MAX_BATCH_SIZE_BYTES = 2 * 1024 * 1024; /* 2Mb */
+    private static final int DEFAULT_MAX_BUFFERED_REQUESTS = 10000;
+    // Source: BulkProcessor::concurrentRequests
+    private static final int DEFAULT_MAX_INFLIGHT_REQUESTS = 1;
+    // Source: OpensearchConnectorOptions.BULK_FLUSH_MAX_ACTIONS_OPTION
+    private static final int DEFAULT_BULK_FLUSH_MAX_ACTIONS = 1000;
+
     private List<HttpHost> hosts;
     private String username;
     private String password;
@@ -205,20 +216,12 @@ public class OpensearchAsyncSinkBuilder<InputT>
     @Override
     public OpensearchAsyncSink<InputT> build() {
         return new OpensearchAsyncSink<InputT>(
-                nonNullOrDefault(
-                        getMaxBatchSize(),
-                        1000), /* OpensearchConnectorOptions.BULK_FLUSH_MAX_ACTIONS_OPTION */
-                nonNullOrDefault(
-                        getMaxInFlightRequests(), 1), /* BulkProcessor::concurrentRequests */
-                nonNullOrDefault(getMaxBufferedRequests(), 10000),
-                nonNullOrDefault(
-                        getMaxBatchSizeInBytes(),
-                        2 * 1024
-                                * 1024), /* OpensearchConnectorOptions.BULK_FLUSH_MAX_SIZE_OPTION */
-                nonNullOrDefault(
-                        getMaxTimeInBufferMS(),
-                        1000), /* OpensearchConnectorOptions.BULK_FLUSH_INTERVAL_OPTION */
-                nonNullOrDefault(getMaxRecordSizeInBytes(), 1 * 1024 * 1024), /* 1Mb */
+                nonNullOrDefault(getMaxBatchSize(), DEFAULT_BULK_FLUSH_MAX_ACTIONS),
+                nonNullOrDefault(getMaxInFlightRequests(), DEFAULT_MAX_INFLIGHT_REQUESTS),
+                nonNullOrDefault(getMaxBufferedRequests(), DEFAULT_MAX_BUFFERED_REQUESTS),
+                nonNullOrDefault(getMaxBatchSizeInBytes(), DEFAULT_MAX_BATCH_SIZE_BYTES),
+                nonNullOrDefault(getMaxTimeInBufferMS(), DEFAULT_MAX_TIME_IN_BUFFER_MS),
+                nonNullOrDefault(getMaxRecordSizeInBytes(), DEFAULT_MAX_RECORD_SIZE_BYTES),
                 elementConverter,
                 hosts,
                 buildNetworkClientConfig());
