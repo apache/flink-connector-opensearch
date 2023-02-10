@@ -76,7 +76,7 @@ class OpensearchAsyncWriterITCase {
 
     private final Lock lock = new ReentrantLock();
     private final Condition completed = lock.newCondition();
-    private final List<DocSerdeRequest<?>> requests = new ArrayList<>();
+    private final List<DocSerdeRequest> requests = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
@@ -270,8 +270,8 @@ class OpensearchAsyncWriterITCase {
                 Collections.emptyList()) {
             @Override
             protected void submitRequestEntries(
-                    List<DocSerdeRequest<?>> requestEntries,
-                    Consumer<List<DocSerdeRequest<?>>> requestResult) {
+                    List<DocSerdeRequest> requestEntries,
+                    Consumer<List<DocSerdeRequest>> requestResult) {
                 super.submitRequestEntries(
                         requestEntries,
                         (entries) -> {
@@ -290,7 +290,7 @@ class OpensearchAsyncWriterITCase {
     }
 
     private static class UpdatingElementConverter
-            implements ElementConverter<Tuple2<Integer, String>, DocSerdeRequest<?>> {
+            implements ElementConverter<Tuple2<Integer, String>, DocSerdeRequest> {
         private static final long serialVersionUID = 1L;
 
         private final String dataFieldName;
@@ -302,7 +302,7 @@ class OpensearchAsyncWriterITCase {
         }
 
         @Override
-        public DocSerdeRequest<?> apply(Tuple2<Integer, String> element, Context context) {
+        public DocSerdeRequest apply(Tuple2<Integer, String> element, Context context) {
             Map<String, Object> document = new HashMap<>();
             document.put(dataFieldName, element.f1);
 

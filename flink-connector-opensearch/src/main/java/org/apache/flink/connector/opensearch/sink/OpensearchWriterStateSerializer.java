@@ -30,15 +30,15 @@ import java.io.IOException;
  * DocWriteRequest}), wrapped into {@link DocSerdeRequest}.
  */
 @Internal
-class OpensearchWriterStateSerializer extends AsyncSinkWriterStateSerializer<DocSerdeRequest<?>> {
+class OpensearchWriterStateSerializer extends AsyncSinkWriterStateSerializer<DocSerdeRequest> {
     @Override
-    protected void serializeRequestToStream(DocSerdeRequest<?> request, DataOutputStream out)
+    protected void serializeRequestToStream(DocSerdeRequest request, DataOutputStream out)
             throws IOException {
         request.writeTo(out);
     }
 
     @Override
-    protected DocSerdeRequest<?> deserializeRequestFromStream(long requestSize, DataInputStream in)
+    protected DocSerdeRequest deserializeRequestFromStream(long requestSize, DataInputStream in)
             throws IOException {
         return DocSerdeRequest.readFrom(requestSize, in);
     }

@@ -38,29 +38,27 @@ import java.io.Serializable;
 /**
  * Wrapper class around {@link DocWriteRequest} since it does not implement {@link Serializable},
  * required by AsyncSink scaffolding.
- *
- * @param <T> type of the write request
  */
 @PublicEvolving
-public class DocSerdeRequest<T> implements Serializable {
+public class DocSerdeRequest implements Serializable {
     private static final long serialVersionUID = 1L;
-    private final DocWriteRequest<T> request;
+    private final DocWriteRequest<?> request;
 
-    private DocSerdeRequest(DocWriteRequest<T> request) {
+    private DocSerdeRequest(DocWriteRequest<?> request) {
         this.request = request;
     }
 
-    public DocWriteRequest<T> getRequest() {
+    public DocWriteRequest<?> getRequest() {
         return request;
     }
 
-    static <T> DocSerdeRequest<T> from(DocWriteRequest<T> request) {
-        return new DocSerdeRequest<>(request);
+    static <T> DocSerdeRequest from(DocWriteRequest<T> request) {
+        return new DocSerdeRequest(request);
     }
 
-    static DocSerdeRequest<?> readFrom(long requestSize, DataInputStream in) throws IOException {
+    static DocSerdeRequest readFrom(long requestSize, DataInputStream in) throws IOException {
         try (final StreamInput stream = new InputStreamStreamInput(in, requestSize)) {
-            return new DocSerdeRequest<>(readDocumentRequest(stream));
+            return new DocSerdeRequest(readDocumentRequest(stream));
         }
     }
 

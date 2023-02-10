@@ -44,7 +44,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * @see OpensearchAsyncSinkBuilder on how to construct a OpensearchAsyncSink
  */
 @PublicEvolving
-public class OpensearchAsyncSink<InputT> extends AsyncSinkBase<InputT, DocSerdeRequest<?>> {
+public class OpensearchAsyncSink<InputT> extends AsyncSinkBase<InputT, DocSerdeRequest> {
     private static final long serialVersionUID = 1L;
 
     private final List<HttpHost> hosts;
@@ -77,7 +77,7 @@ public class OpensearchAsyncSink<InputT> extends AsyncSinkBase<InputT, DocSerdeR
             long maxBatchSizeInBytes,
             long maxTimeInBufferMS,
             long maxRecordSizeInBytes,
-            ElementConverter<InputT, DocSerdeRequest<?>> elementConverter,
+            ElementConverter<InputT, DocSerdeRequest> elementConverter,
             List<HttpHost> hosts,
             NetworkClientConfig networkClientConfig) {
         super(
@@ -105,7 +105,7 @@ public class OpensearchAsyncSink<InputT> extends AsyncSinkBase<InputT, DocSerdeR
 
     @Internal
     @Override
-    public StatefulSinkWriter<InputT, BufferedRequestState<DocSerdeRequest<?>>> createWriter(
+    public StatefulSinkWriter<InputT, BufferedRequestState<DocSerdeRequest>> createWriter(
             InitContext context) throws IOException {
         return new OpensearchAsyncWriter<>(
                 context,
@@ -123,9 +123,8 @@ public class OpensearchAsyncSink<InputT> extends AsyncSinkBase<InputT, DocSerdeR
 
     @Internal
     @Override
-    public StatefulSinkWriter<InputT, BufferedRequestState<DocSerdeRequest<?>>> restoreWriter(
-            InitContext context,
-            Collection<BufferedRequestState<DocSerdeRequest<?>>> recoveredState)
+    public StatefulSinkWriter<InputT, BufferedRequestState<DocSerdeRequest>> restoreWriter(
+            InitContext context, Collection<BufferedRequestState<DocSerdeRequest>> recoveredState)
             throws IOException {
         return new OpensearchAsyncWriter<>(
                 context,
@@ -143,7 +142,7 @@ public class OpensearchAsyncSink<InputT> extends AsyncSinkBase<InputT, DocSerdeR
 
     @Internal
     @Override
-    public SimpleVersionedSerializer<BufferedRequestState<DocSerdeRequest<?>>>
+    public SimpleVersionedSerializer<BufferedRequestState<DocSerdeRequest>>
             getWriterStateSerializer() {
         return new OpensearchWriterStateSerializer();
     }

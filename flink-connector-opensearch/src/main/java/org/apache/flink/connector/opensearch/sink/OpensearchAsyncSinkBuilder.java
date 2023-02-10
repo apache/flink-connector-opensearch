@@ -51,8 +51,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  */
 @PublicEvolving
 public class OpensearchAsyncSinkBuilder<InputT>
-        extends AsyncSinkBaseBuilder<
-                InputT, DocSerdeRequest<?>, OpensearchAsyncSinkBuilder<InputT>> {
+        extends AsyncSinkBaseBuilder<InputT, DocSerdeRequest, OpensearchAsyncSinkBuilder<InputT>> {
     private List<HttpHost> hosts;
     private String username;
     private String password;
@@ -61,7 +60,7 @@ public class OpensearchAsyncSinkBuilder<InputT>
     private Integer connectionRequestTimeout;
     private Integer socketTimeout;
     private Boolean allowInsecure;
-    private ElementConverter<InputT, DocSerdeRequest<?>> elementConverter;
+    private ElementConverter<InputT, DocSerdeRequest> elementConverter;
 
     /**
      * Sets the element converter.

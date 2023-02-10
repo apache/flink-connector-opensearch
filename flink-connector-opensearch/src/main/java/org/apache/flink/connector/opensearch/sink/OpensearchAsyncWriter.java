@@ -70,7 +70,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  *     DocSerdeRequest})
  */
 @Internal
-class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequest<?>> {
+class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequest> {
     private static final Logger LOG = LoggerFactory.getLogger(OpensearchAsyncWriter.class);
 
     private final RestHighLevelClient client;
@@ -112,7 +112,7 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
      */
     OpensearchAsyncWriter(
             Sink.InitContext context,
-            ElementConverter<InputT, DocSerdeRequest<?>> elementConverter,
+            ElementConverter<InputT, DocSerdeRequest> elementConverter,
             int maxBatchSize,
             int maxInFlightRequests,
             int maxBufferedRequests,
@@ -121,7 +121,7 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
             long maxRecordSizeInBytes,
             List<HttpHost> hosts,
             NetworkClientConfig networkClientConfig,
-            Collection<BufferedRequestState<DocSerdeRequest<?>>> initialStates) {
+            Collection<BufferedRequestState<DocSerdeRequest>> initialStates) {
         super(
                 elementConverter,
                 context,
@@ -149,8 +149,7 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
 
     @Override
     protected void submitRequestEntries(
-            List<DocSerdeRequest<?>> requestEntries,
-            Consumer<List<DocSerdeRequest<?>>> requestResult) {
+            List<DocSerdeRequest> requestEntries, Consumer<List<DocSerdeRequest>> requestResult) {
 
         BulkRequest bulkRequest = new BulkRequest();
         requestEntries.forEach(r -> bulkRequest.add(r.getRequest()));
@@ -184,7 +183,7 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
     }
 
     @Override
-    protected long getSizeInBytes(DocSerdeRequest<?> requestEntry) {
+    protected long getSizeInBytes(DocSerdeRequest requestEntry) {
         return requestEntry.getRequest().ramBytesUsed();
     }
 
@@ -211,8 +210,8 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
 
     private void handleFullyFailedBulkRequest(
             Throwable err,
-            List<DocSerdeRequest<?>> requestEntries,
-            Consumer<List<DocSerdeRequest<?>>> requestResult) {
+            List<DocSerdeRequest> requestEntries,
+            Consumer<List<DocSerdeRequest>> requestResult) {
         final boolean retryable = isRetryable(err.getCause());
 
         LOG.warn(
@@ -230,10 +229,10 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
 
     private void handlePartiallyFailedBulkRequests(
             BulkResponse response,
-            List<DocSerdeRequest<?>> requestEntries,
-            Consumer<List<DocSerdeRequest<?>>> requestResult) {
+            List<DocSerdeRequest> requestEntries,
+            Consumer<List<DocSerdeRequest>> requestResult) {
 
-        final List<DocSerdeRequest<?>> failedRequestEntries = new ArrayList<>();
+        final List<DocSerdeRequest> failedRequestEntries = new ArrayList<>();
         final BulkItemResponse[] items = response.getItems();
 
         for (int i = 0; i < items.length; i++) {
