@@ -72,6 +72,7 @@ public class OpensearchSinkBuilder<IN> {
     private Integer connectionRequestTimeout;
     private Integer socketTimeout;
     private Boolean allowInsecure;
+    private FailureHandler failureHandler;
 
     public OpensearchSinkBuilder() {}
 
@@ -286,6 +287,18 @@ public class OpensearchSinkBuilder<IN> {
     }
 
     /**
+     * Allows to set custom failure handler.
+     * If not set, or set to null, then the default behavior is preserved:
+     * throwing a runtime exception upon receiving a failure.
+     * @param failureHandler
+     * @return
+     */
+    public OpensearchSinkBuilder<IN> setFailureHandler(FailureHandler failureHandler) {
+        this.failureHandler = failureHandler;
+        return self();
+    }
+
+    /**
      * Constructs the {@link OpensearchSink} with the properties configured this builder.
      *
      * @return {@link OpensearchSink}
@@ -298,7 +311,7 @@ public class OpensearchSinkBuilder<IN> {
         BulkProcessorConfig bulkProcessorConfig = buildBulkProcessorConfig();
 
         return new OpensearchSink<>(
-                hosts, emitter, deliveryGuarantee, bulkProcessorConfig, networkClientConfig);
+                hosts, emitter, deliveryGuarantee, bulkProcessorConfig, networkClientConfig, failureHandler);
     }
 
     private NetworkClientConfig buildNetworkClientConfig() {
