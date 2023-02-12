@@ -20,10 +20,7 @@ package org.apache.flink.connector.opensearch.sink;
 
 import java.io.Serializable;
 
-/**
- * Handler to process failures.
- */
+/** Handler to process failures. */
 public interface FailureHandler extends Serializable {
     void onFailure(Throwable failure);
 }
-
