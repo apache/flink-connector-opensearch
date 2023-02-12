@@ -346,7 +346,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
         if (chainedFailures == null) {
             return;
         }
-        if( failureHandler == null) {
+        if (failureHandler == null) {
             throw new FlinkRuntimeException(chainedFailures);
         } else {
             failureHandler.onFailure(chainedFailures);
