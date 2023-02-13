@@ -29,20 +29,12 @@ import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 
 import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.ssl.SSLContexts;
 import org.opensearch.OpenSearchException;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.bulk.BulkItemResponse;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.client.RequestOptions;
-import org.opensearch.client.RestClient;
-import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -135,12 +124,7 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
                         .build(),
                 initialStates);
 
-        this.client =
-                new RestHighLevelClient(
-                        configureRestClientBuilder(
-                                RestClient.builder(hosts.toArray(new HttpHost[0])),
-                                networkClientConfig));
-
+        this.client = OpensearchRestClientCreator.create(hosts, networkClientConfig);
         final SinkWriterMetricGroup metricGroup = context.metricGroup();
         checkNotNull(metricGroup);
 
@@ -243,65 +227,5 @@ class OpensearchAsyncWriter<InputT> extends AsyncSinkWriter<InputT, DocSerdeRequ
 
         numRecordsOutErrorsCounter.inc(failedRequestEntries.size());
         requestResult.accept(failedRequestEntries);
-    }
-
-    private static RestClientBuilder configureRestClientBuilder(
-            RestClientBuilder builder, NetworkClientConfig networkClientConfig) {
-        if (networkClientConfig.getConnectionPathPrefix() != null) {
-            builder.setPathPrefix(networkClientConfig.getConnectionPathPrefix());
-        }
-
-        builder.setHttpClientConfigCallback(
-                httpClientBuilder -> {
-                    if (networkClientConfig.getPassword() != null
-                            && networkClientConfig.getUsername() != null) {
-                        final CredentialsProvider credentialsProvider =
-                                new BasicCredentialsProvider();
-                        credentialsProvider.setCredentials(
-                                AuthScope.ANY,
-                                new UsernamePasswordCredentials(
-                                        networkClientConfig.getUsername(),
-                                        networkClientConfig.getPassword()));
-
-                        httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                    }
-
-                    if (networkClientConfig.isAllowInsecure().orElse(false)) {
-                        try {
-                            httpClientBuilder.setSSLContext(
-                                    SSLContexts.custom()
-                                            .loadTrustMaterial(new TrustAllStrategy())
-                                            .build());
-                        } catch (final NoSuchAlgorithmException
-                                | KeyStoreException
-                                | KeyManagementException ex) {
-                            throw new IllegalStateException(
-                                    "Unable to create custom SSL context", ex);
-                        }
-                    }
-
-                    return httpClientBuilder;
-                });
-        if (networkClientConfig.getConnectionRequestTimeout() != null
-                || networkClientConfig.getConnectionTimeout() != null
-                || networkClientConfig.getSocketTimeout() != null) {
-            builder.setRequestConfigCallback(
-                    requestConfigBuilder -> {
-                        if (networkClientConfig.getConnectionRequestTimeout() != null) {
-                            requestConfigBuilder.setConnectionRequestTimeout(
-                                    networkClientConfig.getConnectionRequestTimeout());
-                        }
-                        if (networkClientConfig.getConnectionTimeout() != null) {
-                            requestConfigBuilder.setConnectTimeout(
-                                    networkClientConfig.getConnectionTimeout());
-                        }
-                        if (networkClientConfig.getSocketTimeout() != null) {
-                            requestConfigBuilder.setSocketTimeout(
-                                    networkClientConfig.getSocketTimeout());
-                        }
-                        return requestConfigBuilder;
-                    });
-        }
-        return builder;
     }
 }
