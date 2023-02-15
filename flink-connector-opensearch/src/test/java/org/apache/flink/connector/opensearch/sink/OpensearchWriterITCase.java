@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.flink.connector.opensearch.sink.OpensearchTestClient.buildMessage;
+import static org.apache.flink.connector.opensearch.sink.OpensearchWriter.DEFAULT_FAILURE_HANDLER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Tests for {@link OpensearchWriter}. */
@@ -267,7 +268,8 @@ class OpensearchWriterITCase {
                         true),
                 metricGroup,
                 new TestMailbox(),
-                new DefaultRestClientFactory());
+                new DefaultRestClientFactory(),
+                DEFAULT_FAILURE_HANDLER);
     }
 
     private static class UpdatingEmitter implements OpensearchEmitter<Tuple2<Integer, String>> {
