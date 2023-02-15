@@ -67,6 +67,8 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpensearchWriter.class);
 
+    public static final FailureHandler DEFAULT_FAILURE_HANDLER = ex -> {throw new FlinkRuntimeException(ex);};
+
     private final OpensearchEmitter<? super IN> emitter;
     private final MailboxExecutor mailboxExecutor;
     private final boolean flushOnCheckpoint;
@@ -74,6 +76,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
     private final RestHighLevelClient client;
     private final RequestIndexer requestIndexer;
     private final Counter numBytesOutCounter;
+    private final FailureHandler failureHandler;
 
     private long pendingActions = 0;
     private boolean checkpointInProgress = false;
@@ -103,7 +106,8 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
             BulkProcessorConfig bulkProcessorConfig,
             NetworkClientConfig networkClientConfig,
             SinkWriterMetricGroup metricGroup,
-            MailboxExecutor mailboxExecutor) {
+            MailboxExecutor mailboxExecutor,
+            FailureHandler failureHandler) {
         this.emitter = checkNotNull(emitter);
         this.flushOnCheckpoint = flushOnCheckpoint;
         this.mailboxExecutor = checkNotNull(mailboxExecutor);
@@ -122,6 +126,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
         } catch (Exception e) {
             throw new FlinkRuntimeException("Failed to open the OpensearchEmitter", e);
         }
+        this.failureHandler = failureHandler;
     }
 
     @Override
@@ -343,7 +348,11 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
         if (chainedFailures == null) {
             return;
         }
-        throw new FlinkRuntimeException(chainedFailures);
+        if (failureHandler == null) {
+            throw new FlinkRuntimeException(chainedFailures);
+        } else {
+            failureHandler.onFailure(chainedFailures);
+        }
     }
 
     private static Throwable wrapException(
