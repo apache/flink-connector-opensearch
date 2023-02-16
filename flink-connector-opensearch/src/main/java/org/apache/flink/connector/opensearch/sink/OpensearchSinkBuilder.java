@@ -150,6 +150,7 @@ public class OpensearchSinkBuilder<IN> {
      * @param maxSizeMb the maximum size of buffered actions, in mb.
      * @return this builder
      */
+    @SuppressWarnings("UnusedReturnValue")
     public OpensearchSinkBuilder<IN> setBulkFlushMaxSizeMb(int maxSizeMb) {
         checkState(
                 maxSizeMb == -1 || maxSizeMb > 0,
@@ -164,6 +165,7 @@ public class OpensearchSinkBuilder<IN> {
      * @param intervalMillis the bulk flush interval, in milliseconds.
      * @return this builder
      */
+    @SuppressWarnings("UnusedReturnValue")
     public OpensearchSinkBuilder<IN> setBulkFlushInterval(long intervalMillis) {
         checkState(
                 intervalMillis == -1 || intervalMillis >= 0,
@@ -231,6 +233,7 @@ public class OpensearchSinkBuilder<IN> {
      * @param prefix for the communication
      * @return this builder
      */
+    @SuppressWarnings("UnusedReturnValue")
     public OpensearchSinkBuilder<IN> setConnectionPathPrefix(String prefix) {
         checkNotNull(prefix);
         this.connectionPathPrefix = prefix;
@@ -291,8 +294,8 @@ public class OpensearchSinkBuilder<IN> {
      * Allows to set custom failure handler.
      * If not set, then the DEFAULT_FAILURE_HANDLER will be used
      * which throws a runtime exception upon receiving a failure.
-     * @param failureHandler
-     * @return
+     * @param failureHandler the custom handler
+     * @return this builder
      */
     public OpensearchSinkBuilder<IN> setFailureHandler(FailureHandler failureHandler) {
         checkNotNull(failureHandler);

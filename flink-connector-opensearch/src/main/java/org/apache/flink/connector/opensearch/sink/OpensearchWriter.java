@@ -54,7 +54,6 @@ import org.opensearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -93,7 +92,6 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
      *     checkpoint
      * @param bulkProcessorConfig describing the flushing and failure handling of the used {@link
      *     BulkProcessor}
-     * @param bulkProcessorBuilderFactory configuring the {@link BulkProcessor}'s builder
      * @param networkClientConfig describing properties of the network connection used to connect to
      *     the Opensearch cluster
      * @param metricGroup for the sink writer
@@ -130,7 +128,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
     }
 
     @Override
-    public void write(IN element, Context context) throws IOException, InterruptedException {
+    public void write(IN element, Context context) throws InterruptedException {
         // do not allow new bulk writes until all actions are flushed
         while (checkpointInProgress) {
             mailboxExecutor.yield();
@@ -139,7 +137,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
     }
 
     @Override
-    public void flush(boolean endOfInput) throws IOException, InterruptedException {
+    public void flush(boolean endOfInput) throws InterruptedException {
         checkpointInProgress = true;
         while (pendingActions != 0 && (flushOnCheckpoint || endOfInput)) {
             bulkProcessor.flush();
@@ -228,6 +226,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
 
     private BulkProcessor createBulkProcessor(BulkProcessorConfig bulkProcessorConfig) {
 
+        @SuppressWarnings("All")
         final BulkProcessor.Builder builder =
                 BulkProcessor.builder(
                         new BulkRequestConsumerFactory() { // This cannot be inlined as a
