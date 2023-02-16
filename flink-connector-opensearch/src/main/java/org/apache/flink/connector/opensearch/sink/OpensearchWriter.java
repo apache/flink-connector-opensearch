@@ -66,7 +66,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpensearchWriter.class);
 
-    public static final FailureHandler DEFAULT_FAILURE_HANDLER = ex -> {throw new FlinkRuntimeException(ex);};
+    public static final FailureHandler DEFAULT_FAILURE_HANDLER = ex -> { throw new FlinkRuntimeException(ex); };
 
     private final OpensearchEmitter<? super IN> emitter;
     private final MailboxExecutor mailboxExecutor;
