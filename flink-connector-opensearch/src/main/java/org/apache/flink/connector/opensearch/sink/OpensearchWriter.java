@@ -84,7 +84,6 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
      *     checkpoint
      * @param bulkProcessorConfig describing the flushing and failure handling of the used {@link
      *     BulkProcessor}
-     * @param bulkProcessorBuilderFactory configuring the {@link BulkProcessor}'s builder
      * @param networkClientConfig describing properties of the network connection used to connect to
      *     the Opensearch cluster
      * @param metricGroup for the sink writer
