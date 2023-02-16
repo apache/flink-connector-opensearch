@@ -27,6 +27,7 @@ import org.apache.http.HttpHost;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.apache.flink.connector.opensearch.sink.OpensearchWriter.DEFAULT_FAILURE_HANDLER;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
@@ -73,7 +74,7 @@ public class OpensearchSinkBuilder<IN> {
     private Integer socketTimeout;
     private Boolean allowInsecure;
     private RestClientFactory restClientFactory;
-    private FailureHandler failureHandler;
+    private FailureHandler failureHandler = DEFAULT_FAILURE_HANDLER;
 
     public OpensearchSinkBuilder() {
         restClientFactory = new DefaultRestClientFactory();
@@ -303,8 +304,8 @@ public class OpensearchSinkBuilder<IN> {
 
     /**
      * Allows to set custom failure handler.
-     * If not set, then the default behavior is preserved in OpensearchWriter:
-     * throwing a runtime exception upon receiving a failure.
+     * If not set, then the DEFAULT_FAILURE_HANDLER will be used
+     * which throws a runtime exception upon receiving a failure.
      * @param failureHandler
      * @return
      */

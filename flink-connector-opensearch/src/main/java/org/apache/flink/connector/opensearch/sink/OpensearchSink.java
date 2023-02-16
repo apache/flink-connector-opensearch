@@ -77,7 +77,7 @@ public class OpensearchSink<IN> implements Sink<IN> {
         this.buildBulkProcessorConfig = checkNotNull(buildBulkProcessorConfig);
         this.networkClientConfig = checkNotNull(networkClientConfig);
         this.restClientFactory = checkNotNull(restClientFactory);
-        this.failureHandler = failureHandler;
+        this.failureHandler = checkNotNull(failureHandler);
     }
 
     @Override
