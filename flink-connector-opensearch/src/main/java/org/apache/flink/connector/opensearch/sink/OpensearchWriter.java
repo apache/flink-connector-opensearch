@@ -99,6 +99,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
      *     the Opensearch cluster
      * @param metricGroup for the sink writer
      * @param mailboxExecutor Flink's mailbox executor
+     * @param failureHandler handles the failures reported in the response
      */
     OpensearchWriter(
             List<HttpHost> hosts,
