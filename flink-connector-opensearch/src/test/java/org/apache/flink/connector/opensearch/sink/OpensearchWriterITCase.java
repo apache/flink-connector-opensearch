@@ -239,7 +239,7 @@ class OpensearchWriterITCase {
         }
     }
 
-    private class TestHandler implements FailureHandler {
+    private static class TestHandler implements FailureHandler {
         private boolean failed = false;
 
         private synchronized void setFailed() {
@@ -250,7 +250,7 @@ class OpensearchWriterITCase {
             return failed;
         }
 
-        @java.lang.Override
+        @Override
         public void onFailure(Throwable failure) {
             setFailed();
         }
@@ -279,8 +279,8 @@ class OpensearchWriterITCase {
                 index,
                 flushOnCheckpoint,
                 bulkProcessorConfig,
-                DEFAULT_FAILURE_HANDLER,
-                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()));
+                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()),
+                DEFAULT_FAILURE_HANDLER);
     }
 
     private OpensearchWriter<Tuple2<Integer, String>> createWriter(
@@ -292,16 +292,29 @@ class OpensearchWriterITCase {
                 index,
                 flushOnCheckpoint,
                 bulkProcessorConfig,
-                failureHandler,
-                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()));
+                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()),
+                failureHandler);
     }
 
     private OpensearchWriter<Tuple2<Integer, String>> createWriter(
             String index,
             boolean flushOnCheckpoint,
             BulkProcessorConfig bulkProcessorConfig,
-            FailureHandler failureHandler,
             SinkWriterMetricGroup metricGroup) {
+        return createWriter(
+                index,
+                flushOnCheckpoint,
+                bulkProcessorConfig,
+                metricGroup,
+                DEFAULT_FAILURE_HANDLER);
+    }
+
+    private OpensearchWriter<Tuple2<Integer, String>> createWriter(
+            String index,
+            boolean flushOnCheckpoint,
+            BulkProcessorConfig bulkProcessorConfig,
+            SinkWriterMetricGroup metricGroup,
+            FailureHandler failureHandler) {
         return new OpensearchWriter<Tuple2<Integer, String>>(
                 Collections.singletonList(HttpHost.create(OS_CONTAINER.getHttpHostAddress())),
                 new UpdatingEmitter(index, context.getDataFieldName()),

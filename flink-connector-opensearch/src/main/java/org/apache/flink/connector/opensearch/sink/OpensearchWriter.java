@@ -92,6 +92,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
      * @param metricGroup for the sink writer
      * @param mailboxExecutor Flink's mailbox executor
      * @param restClientFactory Flink's mailbox executor
+     * @param failureHandler handles the failures reported in the response
      */
     OpensearchWriter(
             List<HttpHost> hosts,
