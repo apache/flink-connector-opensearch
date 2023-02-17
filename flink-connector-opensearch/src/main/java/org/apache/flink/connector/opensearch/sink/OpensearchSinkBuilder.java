@@ -153,7 +153,6 @@ public class OpensearchSinkBuilder<IN> {
      * @param maxSizeMb the maximum size of buffered actions, in mb.
      * @return this builder
      */
-    @SuppressWarnings("UnusedReturnValue")
     public OpensearchSinkBuilder<IN> setBulkFlushMaxSizeMb(int maxSizeMb) {
         checkState(
                 maxSizeMb == -1 || maxSizeMb > 0,
