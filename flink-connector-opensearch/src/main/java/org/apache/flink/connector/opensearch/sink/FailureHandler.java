@@ -18,13 +18,13 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
+import org.apache.flink.annotation.Public;
+
 import java.io.Serializable;
 
-/**
- * Handler to process failures.
- */
+/** Handler to process failures. */
+@Public
 @FunctionalInterface
 public interface FailureHandler extends Serializable {
     void onFailure(Throwable failure);
 }
-
