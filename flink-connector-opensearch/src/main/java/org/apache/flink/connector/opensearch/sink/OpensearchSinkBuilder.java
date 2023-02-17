@@ -291,9 +291,9 @@ public class OpensearchSinkBuilder<IN> {
     }
 
     /**
-     * Allows to set custom failure handler.
-     * If not set, then the DEFAULT_FAILURE_HANDLER will be used
-     * which throws a runtime exception upon receiving a failure.
+     * Allows to set custom failure handler. If not set, then the DEFAULT_FAILURE_HANDLER will be
+     * used which throws a runtime exception upon receiving a failure.
+     *
      * @param failureHandler the custom handler
      * @return this builder
      */
@@ -316,7 +316,12 @@ public class OpensearchSinkBuilder<IN> {
         BulkProcessorConfig bulkProcessorConfig = buildBulkProcessorConfig();
 
         return new OpensearchSink<>(
-                hosts, emitter, deliveryGuarantee, bulkProcessorConfig, networkClientConfig, failureHandler);
+                hosts,
+                emitter,
+                deliveryGuarantee,
+                bulkProcessorConfig,
+                networkClientConfig,
+                failureHandler);
     }
 
     private NetworkClientConfig buildNetworkClientConfig() {

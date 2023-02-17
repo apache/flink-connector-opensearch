@@ -175,7 +175,8 @@ class OpensearchWriterITCase {
                 new BulkProcessorConfig(flushAfterNActions, -1, -1, FlushBackoffType.NONE, 0, 0);
 
         try (final OpensearchWriter<Tuple2<Integer, String>> writer =
-                createWriter(index, false, bulkProcessorConfig, DEFAULT_FAILURE_HANDLER, metricGroup)) {
+                createWriter(
+                        index, false, bulkProcessorConfig, DEFAULT_FAILURE_HANDLER, metricGroup)) {
             final Counter numBytesOut = operatorIOMetricGroup.getNumBytesOutCounter();
             assertThat(numBytesOut.getCount()).isEqualTo(0);
             writer.write(Tuple2.of(1, buildMessage(1)), null);
@@ -239,14 +240,22 @@ class OpensearchWriterITCase {
         }
     }
 
-    private boolean failurehandlerCalled = false;
+    private class TestHandler implements FailureHandler {
+        private boolean failed = false;
 
-    FailureHandler testHandler = new FailureHandler() {
-        @Override
-        public synchronized void onFailure(Throwable failure) {
-            failurehandlerCalled = true;
+        private synchronized void setFailed() {
+            failed = true;
         }
-    };
+
+        public boolean isFailed() {
+            return failed;
+        }
+
+        @java.lang.Override
+        public void onFailure(Throwable failure) {
+            setFailed();
+        }
+    }
 
     @Test
     void testWriteErrorOnUpdate() throws Exception {
@@ -255,12 +264,13 @@ class OpensearchWriterITCase {
         final BulkProcessorConfig bulkProcessorConfig =
                 new BulkProcessorConfig(flushAfterNActions, -1, -1, FlushBackoffType.NONE, 0, 0);
 
+        final TestHandler testHandler = new TestHandler();
         try (final OpensearchWriter<Tuple2<Integer, String>> writer =
-                     createWriter(index, true, bulkProcessorConfig, testHandler)) {
+                createWriter(index, true, bulkProcessorConfig, testHandler)) {
             // Trigger an error by updating non-existing document
             writer.write(Tuple2.of(1, "u" + buildMessage(1)), null);
             context.assertThatIdsAreNotWritten(index, 1);
-            assertThat(failurehandlerCalled);
+            assertThat(testHandler.isFailed()).isEqualTo(true);
         }
     }
 
@@ -275,7 +285,10 @@ class OpensearchWriterITCase {
     }
 
     private OpensearchWriter<Tuple2<Integer, String>> createWriter(
-            String index, boolean flushOnCheckpoint, BulkProcessorConfig bulkProcessorConfig, FailureHandler failureHandler) {
+            String index,
+            boolean flushOnCheckpoint,
+            BulkProcessorConfig bulkProcessorConfig,
+            FailureHandler failureHandler) {
         return createWriter(
                 index,
                 flushOnCheckpoint,
