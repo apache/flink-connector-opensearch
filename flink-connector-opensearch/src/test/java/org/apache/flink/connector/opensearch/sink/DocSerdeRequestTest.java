@@ -25,7 +25,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.action.DocWriteRequest;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.support.IndicesOptions;
 import org.opensearch.action.update.UpdateRequest;
+import org.opensearch.index.VersionType;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,7 +39,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 
 class DocSerdeRequestTest {
     @ParameterizedTest
@@ -65,9 +66,8 @@ class DocSerdeRequestTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void unsupportedRequestType() throws IOException {
-        final DocSerdeRequest serialized = DocSerdeRequest.from(mock(DocWriteRequest.class));
+        final DocSerdeRequest serialized = DocSerdeRequest.from(new DummyDocWriteRequest());
         try (final ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
             try (final DataOutputStream out = new DataOutputStream(bytes)) {
                 assertThatThrownBy(() -> serialized.writeTo(out))
@@ -88,5 +88,112 @@ class DocSerdeRequestTest {
                         new IndexRequest("index")
                                 .id("id")
                                 .source(Collections.singletonMap("action", "index"))));
+    }
+
+    private static class DummyDocWriteRequest implements DocWriteRequest<Object> {
+        @Override
+        public String[] indices() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long ramBytesUsed() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object index(String index) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String index() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object type(String type) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String type() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object defaultTypeIfNull(String defaultType) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String id() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public IndicesOptions indicesOptions() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object routing(String routing) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String routing() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long version() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object version(long version) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public VersionType versionType() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object versionType(VersionType versionType) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object setIfSeqNo(long seqNo) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Object setIfPrimaryTerm(long term) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long ifSeqNo() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long ifPrimaryTerm() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public OpType opType() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isRequireAlias() {
+            throw new UnsupportedOperationException();
+        }
     }
 }

@@ -162,6 +162,85 @@ This will buffer elements before sending them in bulk to the cluster. The `BulkP
 executes bulk requests one at a time, i.e. there will be no two concurrent
 flushes of the buffered actions in progress.
 
+## Opensearch AsyncSink
+
+The example below shows how to configure and create a AsyncSink (see please [FLIP-171](https://cwiki.apache.org/confluence/display/FLINK/FLIP-171%3A+Async+Sink)):
+
+{{< tabs "b1732edd-4218-470e-adad-b1ebb4021a1b" >}}
+{{< tab "Java" >}}
+
+```java
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.connector.opensearch.sink.OpensearchAsyncSink;
+import org.apache.flink.streaming.api.datastream.DataStream;
+
+import org.apache.http.HttpHost;
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.client.Requests;
+
+import java.util.HashMap;
+import java.util.Map;
+
+DataStream<String> input = ...;
+
+input.sinkTo(
+    OpensearchAsyncSink.<String>builder()
+        .setHosts(new HttpHost("localhost", 9200, "http"))
+        .setElementConverter((element: String, context: SinkWriter.Context) -> createIndexRequest(element))
+        .build());
+
+
+private static IndexRequest createIndexRequest(String element) {
+    Map<String, Object> json = new HashMap<>();
+    json.put("data", element);
+
+    return Requests.indexRequest()
+        .index("my-index")
+        .id(element)
+        .source(json);
+}
+```
+{{< /tab >}}
+{{< tab "Scala" >}}
+```scala
+import org.apache.flink.api.connector.sink.SinkWriter
+import org.apache.flink.connector.opensearch.sink.{OpensearchAsyncSink, RequestIndexer}
+import org.apache.flink.streaming.api.datastream.DataStream
+import org.apache.http.HttpHost
+import org.opensearch.action.index.IndexRequest
+import org.opensearch.client.Requests
+
+val input: DataStream[String] = ...
+
+input.sinkTo(
+  OpensearchAsyncSink[String]
+    .builder()
+    .setMaxBatchSize(1) // Instructs the AsyncSink to emit after every element, otherwise they would be buffered
+    .setHosts(new HttpHost("127.0.0.1", 9200, "http"))
+    .setElementConverter((element: String, context: SinkWriter.Context) => createIndexRequest(element))
+    .build())
+
+def createIndexRequest(element: (String)): IndexRequest = {
+
+  val json = Map(
+    "data" -> element.asInstanceOf[AnyRef]
+  )
+
+  Requests.indexRequest.index("my-index").source(mapAsJavaMap(json))
+}
+```
+
+{{< /tab >}}
+{{< /tabs >}}
+
+Note that the example only demonstrates performing a single index
+request for each incoming element. Generally, the `ElementConverter`
+can be used to produce the requests of different types (ex.,
+`DeleteRequest`, `UpdateRequest`, etc.). 
+
+Internally, each parallel instance of the Flink Opensearch AsyncSink uses
+a `RestHighLevelClient::bulkAsync` to send action requests to the cluster.
+
 ### Opensearch Sinks and Fault Tolerance
 
 With Flink’s checkpointing enabled, the Flink Opensearch Sink guarantees
