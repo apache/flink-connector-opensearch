@@ -39,12 +39,12 @@ the following dependency to your project:
   <tbody>
     <tr>
         <td>1.x</td>
-        <td>{{< connector_artifact flink-connector-opensearch 1.0.0 >}}</td>
+        <td>{{< connector_artifact flink-connector-opensearch opensearch >}}</td>
     </tr>
     <tr>
         <td>2.x</td>
         <td>
-          {{< connector_artifact flink-connector-opensearch 1.0.0 >}}
+          {{< connector_artifact flink-connector-opensearch opensearch >}}
 
           By default, Apache Flink Opensearch Connector uses 1.3.x client libraries. You could switch to use 2.x (or upcoming 3.x) clients noting that those require **JDK-11 or above**, for example.
 
