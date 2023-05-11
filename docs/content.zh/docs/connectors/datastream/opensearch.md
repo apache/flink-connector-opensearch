@@ -39,11 +39,11 @@ the following dependency to your project:
   <tbody>
     <tr>
         <td>1.x</td>
-        <td>{{< connector_artifact flink-connector-opensearch 1.0.0 >}}</td>
+        <td>{{< connector_artifact flink-connector-opensearch opensearch >}}</td>
     </tr>
     <tr>
         <td>2.x</td>
-        <td>{{< connector_artifact flink-connector-opensearch 1.0.0 >}}</td>
+        <td>{{< connector_artifact flink-connector-opensearch opensearch >}}</td>
     </tr>
   </tbody>
 </table>

@@ -37,7 +37,7 @@ If no primary key is defined on the DDL, the connector can only operate in appen
 Dependencies
 ------------
 
-{{< sql_connector_download_table "opensearch" 1.0.0 >}}
+{{< sql_connector_download_table "opensearch" >}}
 
 The Opensearch connector is not part of the binary distribution.
 See how to link with it for cluster execution [here]({{< ref "docs/dev/configuration/overview" >}}).
