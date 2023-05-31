@@ -68,6 +68,10 @@ class OpensearchTestClient {
         return DATA_FIELD_NAME;
     }
 
+    static String buildMessage(int id, String prefix) {
+        return prefix + buildMessage(id);
+    }
+
     static String buildMessage(int id) {
         return "test-" + id;
     }

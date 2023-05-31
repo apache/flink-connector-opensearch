@@ -38,7 +38,7 @@ import static org.apache.flink.util.Preconditions.checkState;
  * on checkpoint or the default number of actions was buffered (1000).
  *
  * <pre>{@code
- * OpensearchSink<String> sink = new OpensearchSinkBuilder<String>()
+ * OpensearchSink<Tuple2<String, String>> sink = new OpensearchSinkBuilder<Tuple2<String, String>>()
  *     .setHosts(new HttpHost("localhost:9200")
  *     .setEmitter((element, context, indexer) -> {
  *          indexer.add(

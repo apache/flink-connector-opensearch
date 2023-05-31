@@ -21,7 +21,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.CheckpointListener;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.apache.flink.connector.base.sink.writer.ElementConverter;
 import org.apache.flink.connector.opensearch.OpensearchUtil;
 import org.apache.flink.connector.opensearch.test.DockerImageVersions;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -35,8 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.action.DocWriteRequest;
 import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
@@ -54,11 +54,11 @@ import java.util.function.BiFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Tests for {@link OpensearchSink}. */
+/** Tests for {@link OpensearchAsyncSink}. */
 @Testcontainers
 @ExtendWith(TestLoggerExtension.class)
-class OpensearchSinkITCase {
-    protected static final Logger LOG = LoggerFactory.getLogger(OpensearchSinkITCase.class);
+class OpensearchAsyncSinkITCase {
+    protected static final Logger LOG = LoggerFactory.getLogger(OpensearchAsyncSinkITCase.class);
     private static boolean failed;
 
     private RestHighLevelClient client;
@@ -83,68 +83,44 @@ class OpensearchSinkITCase {
     }
 
     @ParameterizedTest
-    @EnumSource(DeliveryGuarantee.class)
-    void testWriteToOpensearchWithDeliveryGuarantee(DeliveryGuarantee deliveryGuarantee)
-            throws Exception {
-        final String index = "test-opensearch-with-delivery-" + deliveryGuarantee;
-        boolean failure = false;
-        try {
-            runTest(index, false, TestEmitter::jsonEmitter, deliveryGuarantee, null);
-        } catch (IllegalStateException e) {
-            failure = true;
-            assertThat(deliveryGuarantee).isSameAs(DeliveryGuarantee.EXACTLY_ONCE);
-        } finally {
-            assertThat(failure).isEqualTo(deliveryGuarantee == DeliveryGuarantee.EXACTLY_ONCE);
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("opensearchEmitters")
+    @MethodSource("opensearchConverters")
     void testWriteJsonToOpensearch(
-            BiFunction<String, String, OpensearchEmitter<Tuple2<Integer, String>>> emitterProvider)
+            BiFunction<
+                            String,
+                            String,
+                            ElementConverter<Tuple2<Integer, String>, DocWriteRequest<?>>>
+                    converterProvider)
             throws Exception {
-        final String index = "test-opensearch-sink-" + UUID.randomUUID();
-        runTest(index, false, emitterProvider, null);
+        final String index = "test-opensearch-async-sink-" + UUID.randomUUID();
+        runTest(index, false, converterProvider, null);
     }
 
     @Test
     void testRecovery() throws Exception {
-        final String index = "test-recovery-opensearch-sink";
-        runTest(index, true, TestEmitter::jsonEmitter, new FailingMapper());
+        final String index = "test-recovery-opensearch-async-sink";
+        runTest(index, true, TestConverter::jsonConverter, new FailingMapper());
         assertThat(failed).isTrue();
     }
 
     private void runTest(
             String index,
             boolean allowRestarts,
-            BiFunction<String, String, OpensearchEmitter<Tuple2<Integer, String>>> emitterProvider,
+            BiFunction<
+                            String,
+                            String,
+                            ElementConverter<Tuple2<Integer, String>, DocWriteRequest<?>>>
+                    converterProvider,
             @Nullable MapFunction<Long, Long> additionalMapper)
             throws Exception {
-        runTest(
-                index,
-                allowRestarts,
-                emitterProvider,
-                DeliveryGuarantee.AT_LEAST_ONCE,
-                additionalMapper);
-    }
-
-    private void runTest(
-            String index,
-            boolean allowRestarts,
-            BiFunction<String, String, OpensearchEmitter<Tuple2<Integer, String>>> emitterProvider,
-            DeliveryGuarantee deliveryGuarantee,
-            @Nullable MapFunction<Long, Long> additionalMapper)
-            throws Exception {
-        final OpensearchSink<Tuple2<Integer, String>> sink =
-                new OpensearchSinkBuilder<>()
+        final OpensearchAsyncSinkBuilder<Tuple2<Integer, String>> builder =
+                OpensearchAsyncSink.<Tuple2<Integer, String>>builder()
                         .setHosts(HttpHost.create(OS_CONTAINER.getHttpHostAddress()))
-                        .setEmitter(emitterProvider.apply(index, context.getDataFieldName()))
-                        .setBulkFlushMaxActions(5)
+                        .setElementConverter(
+                                converterProvider.apply(index, context.getDataFieldName()))
+                        .setMaxBatchSize(5)
                         .setConnectionUsername(OS_CONTAINER.getUsername())
                         .setConnectionPassword(OS_CONTAINER.getPassword())
-                        .setDeliveryGuarantee(deliveryGuarantee)
-                        .setAllowInsecure(true)
-                        .build();
+                        .setAllowInsecure(true);
 
         try (final StreamExecutionEnvironment env = new LocalStreamEnvironment()) {
             env.enableCheckpointing(100L);
@@ -166,19 +142,23 @@ class OpensearchSinkITCase {
                                             OpensearchTestClient.buildMessage(value.intValue()));
                                 }
                             })
-                    .sinkTo(sink);
+                    .sinkTo(builder.build());
             env.execute();
             context.assertThatIdsAreWritten(index, 1, 2, 3, 4, 5);
         }
     }
 
-    private static List<BiFunction<String, String, OpensearchEmitter<Tuple2<Integer, String>>>>
-            opensearchEmitters() {
-        return Arrays.asList(TestEmitter::jsonEmitter, TestEmitter::smileEmitter);
+    private static List<
+                    BiFunction<
+                            String,
+                            String,
+                            ElementConverter<Tuple2<Integer, String>, DocWriteRequest<?>>>>
+            opensearchConverters() {
+        return Arrays.asList(TestConverter::jsonConverter, TestConverter::smileConverter);
     }
 
     private static class FailingMapper implements MapFunction<Long, Long>, CheckpointListener {
-
+        private static final long serialVersionUID = 1L;
         private int emittedRecords = 0;
 
         @Override
