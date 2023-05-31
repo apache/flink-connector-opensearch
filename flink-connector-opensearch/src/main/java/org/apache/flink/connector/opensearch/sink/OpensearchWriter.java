@@ -27,12 +27,6 @@ import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.function.ThrowingRunnable;
 
 import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.ssl.SSLContexts;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.DocWriteRequest;
 import org.opensearch.action.bulk.BackoffPolicy;
@@ -55,9 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import static org.apache.flink.util.ExceptionUtils.firstOrSuppressed;
@@ -95,6 +86,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
      *     the Opensearch cluster
      * @param metricGroup for the sink writer
      * @param mailboxExecutor Flink's mailbox executor
+     * @param restClientFactory Flink's mailbox executor
      */
     OpensearchWriter(
             List<HttpHost> hosts,
@@ -103,15 +95,18 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
             BulkProcessorConfig bulkProcessorConfig,
             NetworkClientConfig networkClientConfig,
             SinkWriterMetricGroup metricGroup,
-            MailboxExecutor mailboxExecutor) {
+            MailboxExecutor mailboxExecutor,
+            RestClientFactory restClientFactory) {
         this.emitter = checkNotNull(emitter);
         this.flushOnCheckpoint = flushOnCheckpoint;
         this.mailboxExecutor = checkNotNull(mailboxExecutor);
-        this.client =
-                new RestHighLevelClient(
-                        configureRestClientBuilder(
-                                RestClient.builder(hosts.toArray(new HttpHost[0])),
-                                networkClientConfig));
+
+        final RestClientBuilder builder = RestClient.builder(hosts.toArray(new HttpHost[0]));
+        checkNotNull(restClientFactory)
+                .configureRestClientBuilder(
+                        builder, new DefaultRestClientConfig(networkClientConfig));
+
+        this.client = new RestHighLevelClient(builder);
         this.bulkProcessor = createBulkProcessor(bulkProcessorConfig);
         this.requestIndexer = new DefaultRequestIndexer(metricGroup.getNumRecordsSendCounter());
         checkNotNull(metricGroup);
@@ -159,66 +154,6 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
         emitter.close();
         bulkProcessor.close();
         client.close();
-    }
-
-    private static RestClientBuilder configureRestClientBuilder(
-            RestClientBuilder builder, NetworkClientConfig networkClientConfig) {
-        if (networkClientConfig.getConnectionPathPrefix() != null) {
-            builder.setPathPrefix(networkClientConfig.getConnectionPathPrefix());
-        }
-
-        builder.setHttpClientConfigCallback(
-                httpClientBuilder -> {
-                    if (networkClientConfig.getPassword() != null
-                            && networkClientConfig.getUsername() != null) {
-                        final CredentialsProvider credentialsProvider =
-                                new BasicCredentialsProvider();
-                        credentialsProvider.setCredentials(
-                                AuthScope.ANY,
-                                new UsernamePasswordCredentials(
-                                        networkClientConfig.getUsername(),
-                                        networkClientConfig.getPassword()));
-
-                        httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                    }
-
-                    if (networkClientConfig.isAllowInsecure().orElse(false)) {
-                        try {
-                            httpClientBuilder.setSSLContext(
-                                    SSLContexts.custom()
-                                            .loadTrustMaterial(new TrustAllStrategy())
-                                            .build());
-                        } catch (final NoSuchAlgorithmException
-                                | KeyStoreException
-                                | KeyManagementException ex) {
-                            throw new IllegalStateException(
-                                    "Unable to create custom SSL context", ex);
-                        }
-                    }
-
-                    return httpClientBuilder;
-                });
-        if (networkClientConfig.getConnectionRequestTimeout() != null
-                || networkClientConfig.getConnectionTimeout() != null
-                || networkClientConfig.getSocketTimeout() != null) {
-            builder.setRequestConfigCallback(
-                    requestConfigBuilder -> {
-                        if (networkClientConfig.getConnectionRequestTimeout() != null) {
-                            requestConfigBuilder.setConnectionRequestTimeout(
-                                    networkClientConfig.getConnectionRequestTimeout());
-                        }
-                        if (networkClientConfig.getConnectionTimeout() != null) {
-                            requestConfigBuilder.setConnectTimeout(
-                                    networkClientConfig.getConnectionTimeout());
-                        }
-                        if (networkClientConfig.getSocketTimeout() != null) {
-                            requestConfigBuilder.setSocketTimeout(
-                                    networkClientConfig.getSocketTimeout());
-                        }
-                        return requestConfigBuilder;
-                    });
-        }
-        return builder;
     }
 
     private BulkProcessor createBulkProcessor(BulkProcessorConfig bulkProcessorConfig) {

@@ -99,6 +99,18 @@ class OpensearchSinkBuilderTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
+    @Test
+    void testThrowIfRestClientFactoryNotSet() {
+        assertThatThrownBy(() -> createEmptyBuilder().setRestClientFactory(null).build())
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void testThrowIfConnectionPathPrefixNotSet() {
+        assertThatThrownBy(() -> createEmptyBuilder().setConnectionPathPrefix(null).build())
+                .isInstanceOf(NullPointerException.class);
+    }
+
     private OpensearchSinkBuilder<Object> createEmptyBuilder() {
         return new OpensearchSinkBuilder<>();
     }
