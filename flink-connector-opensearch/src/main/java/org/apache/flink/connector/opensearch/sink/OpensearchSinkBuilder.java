@@ -72,8 +72,11 @@ public class OpensearchSinkBuilder<IN> {
     private Integer connectionRequestTimeout;
     private Integer socketTimeout;
     private Boolean allowInsecure;
+    private RestClientFactory restClientFactory;
 
-    public OpensearchSinkBuilder() {}
+    public OpensearchSinkBuilder() {
+        restClientFactory = new DefaultRestClientFactory();
+    }
 
     @SuppressWarnings("unchecked")
     protected <S extends OpensearchSinkBuilder<?>> S self() {
@@ -286,6 +289,18 @@ public class OpensearchSinkBuilder<IN> {
     }
 
     /**
+     * Sets the {@link RestClientFactory} to be used for configuring the instance of the OpenSearch
+     * REST client.
+     *
+     * @param restClientFactory the {@link RestClientFactory} instance
+     * @return this builder
+     */
+    public OpensearchSinkBuilder<IN> setRestClientFactory(RestClientFactory restClientFactory) {
+        this.restClientFactory = checkNotNull(restClientFactory);
+        return self();
+    }
+
+    /**
      * Constructs the {@link OpensearchSink} with the properties configured this builder.
      *
      * @return {@link OpensearchSink}
@@ -298,7 +313,12 @@ public class OpensearchSinkBuilder<IN> {
         BulkProcessorConfig bulkProcessorConfig = buildBulkProcessorConfig();
 
         return new OpensearchSink<>(
-                hosts, emitter, deliveryGuarantee, bulkProcessorConfig, networkClientConfig);
+                hosts,
+                emitter,
+                deliveryGuarantee,
+                bulkProcessorConfig,
+                networkClientConfig,
+                restClientFactory);
     }
 
     private NetworkClientConfig buildNetworkClientConfig() {
