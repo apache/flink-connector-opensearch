@@ -23,6 +23,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.opensearch.client.RestClientBuilder;
 
@@ -31,7 +32,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
 /** Provides the default implementation for {@link RestClientFactory}. */
-class DefaultRestClientFactory implements RestClientFactory {
+public class DefaultRestClientFactory implements RestClientFactory {
     private static final long serialVersionUID = 1L;
 
     @Override
@@ -44,33 +45,7 @@ class DefaultRestClientFactory implements RestClientFactory {
 
         builder.setHttpClientConfigCallback(
                 httpClientBuilder -> {
-                    if (networkClientConfig.getPassword() != null
-                            && networkClientConfig.getUsername() != null) {
-                        final CredentialsProvider credentialsProvider =
-                                new BasicCredentialsProvider();
-                        credentialsProvider.setCredentials(
-                                AuthScope.ANY,
-                                new UsernamePasswordCredentials(
-                                        networkClientConfig.getUsername(),
-                                        networkClientConfig.getPassword()));
-
-                        httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                    }
-
-                    if (networkClientConfig.isAllowInsecure().orElse(false)) {
-                        try {
-                            httpClientBuilder.setSSLContext(
-                                    SSLContexts.custom()
-                                            .loadTrustMaterial(new TrustAllStrategy())
-                                            .build());
-                        } catch (final NoSuchAlgorithmException
-                                | KeyStoreException
-                                | KeyManagementException ex) {
-                            throw new IllegalStateException(
-                                    "Unable to create custom SSL context", ex);
-                        }
-                    }
-
+                    configureHttpClientBuilder(httpClientBuilder, networkClientConfig);
                     return httpClientBuilder;
                 });
         if (networkClientConfig.getConnectionRequestTimeout() != null
@@ -92,6 +67,31 @@ class DefaultRestClientFactory implements RestClientFactory {
                         }
                         return requestConfigBuilder;
                     });
+        }
+    }
+
+    protected void configureHttpClientBuilder(
+            HttpAsyncClientBuilder httpClientBuilder, RestClientConfig networkClientConfig) {
+        if (networkClientConfig.getPassword() != null
+                && networkClientConfig.getUsername() != null) {
+            final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(
+                    AuthScope.ANY,
+                    new UsernamePasswordCredentials(
+                            networkClientConfig.getUsername(), networkClientConfig.getPassword()));
+
+            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+        }
+
+        if (networkClientConfig.isAllowInsecure().orElse(false)) {
+            try {
+                httpClientBuilder.setSSLContext(
+                        SSLContexts.custom().loadTrustMaterial(new TrustAllStrategy()).build());
+            } catch (final NoSuchAlgorithmException
+                    | KeyStoreException
+                    | KeyManagementException ex) {
+                throw new IllegalStateException("Unable to create custom SSL context", ex);
+            }
         }
     }
 }
