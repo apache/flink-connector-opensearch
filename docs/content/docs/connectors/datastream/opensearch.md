@@ -274,7 +274,7 @@ More information about Opensearch can be found [here](https://opensearch.org/).
 
 For the execution of your Flink program, it is recommended to build a
 so-called uber-jar (executable jar) containing all your dependencies
-(see [here]({{< ref "docs/dev/configuration" >}}) for further information).
+(see [here]({{< ref "docs/dev/configuration/overview" >}}) for further information).
 
 Alternatively, you can put the connector's jar file into Flink's `lib/` folder to make it available
 system-wide, i.e. for all job being run.
