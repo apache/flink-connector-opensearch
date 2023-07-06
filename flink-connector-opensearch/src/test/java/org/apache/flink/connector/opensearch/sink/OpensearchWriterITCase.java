@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.flink.connector.opensearch.sink.OpensearchTestClient.buildMessage;
+import static org.apache.flink.connector.opensearch.sink.OpensearchWriter.DEFAULT_FAILURE_HANDLER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Tests for {@link OpensearchWriter}. */
@@ -238,13 +239,61 @@ class OpensearchWriterITCase {
         }
     }
 
+    private static class TestHandler implements FailureHandler {
+        private boolean failed = false;
+
+        private synchronized void setFailed() {
+            failed = true;
+        }
+
+        public boolean isFailed() {
+            return failed;
+        }
+
+        @Override
+        public void onFailure(Throwable failure) {
+            setFailed();
+        }
+    }
+
+    @Test
+    void testWriteErrorOnUpdate() throws Exception {
+        final String index = "test-bulk-flush-with-error";
+        final int flushAfterNActions = 1;
+        final BulkProcessorConfig bulkProcessorConfig =
+                new BulkProcessorConfig(flushAfterNActions, -1, -1, FlushBackoffType.NONE, 0, 0);
+
+        final TestHandler testHandler = new TestHandler();
+        try (final OpensearchWriter<Tuple2<Integer, String>> writer =
+                createWriter(index, true, bulkProcessorConfig, testHandler)) {
+            // Trigger an error by updating non-existing document
+            writer.write(Tuple2.of(1, "u" + buildMessage(1)), null);
+            context.assertThatIdsAreNotWritten(index, 1);
+            assertThat(testHandler.isFailed()).isEqualTo(true);
+        }
+    }
+
     private OpensearchWriter<Tuple2<Integer, String>> createWriter(
             String index, boolean flushOnCheckpoint, BulkProcessorConfig bulkProcessorConfig) {
         return createWriter(
                 index,
                 flushOnCheckpoint,
                 bulkProcessorConfig,
-                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()));
+                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()),
+                DEFAULT_FAILURE_HANDLER);
+    }
+
+    private OpensearchWriter<Tuple2<Integer, String>> createWriter(
+            String index,
+            boolean flushOnCheckpoint,
+            BulkProcessorConfig bulkProcessorConfig,
+            FailureHandler failureHandler) {
+        return createWriter(
+                index,
+                flushOnCheckpoint,
+                bulkProcessorConfig,
+                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()),
+                failureHandler);
     }
 
     private OpensearchWriter<Tuple2<Integer, String>> createWriter(
@@ -252,6 +301,20 @@ class OpensearchWriterITCase {
             boolean flushOnCheckpoint,
             BulkProcessorConfig bulkProcessorConfig,
             SinkWriterMetricGroup metricGroup) {
+        return createWriter(
+                index,
+                flushOnCheckpoint,
+                bulkProcessorConfig,
+                metricGroup,
+                DEFAULT_FAILURE_HANDLER);
+    }
+
+    private OpensearchWriter<Tuple2<Integer, String>> createWriter(
+            String index,
+            boolean flushOnCheckpoint,
+            BulkProcessorConfig bulkProcessorConfig,
+            SinkWriterMetricGroup metricGroup,
+            FailureHandler failureHandler) {
         return new OpensearchWriter<Tuple2<Integer, String>>(
                 Collections.singletonList(HttpHost.create(OS_CONTAINER.getHttpHostAddress())),
                 new UpdatingEmitter(index, context.getDataFieldName()),
@@ -267,7 +330,8 @@ class OpensearchWriterITCase {
                         true),
                 metricGroup,
                 new TestMailbox(),
-                new DefaultRestClientFactory());
+                new DefaultRestClientFactory(),
+                failureHandler);
     }
 
     private static class UpdatingEmitter implements OpensearchEmitter<Tuple2<Integer, String>> {

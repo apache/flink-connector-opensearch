@@ -27,6 +27,7 @@ import org.apache.http.HttpHost;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.apache.flink.connector.opensearch.sink.OpensearchWriter.DEFAULT_FAILURE_HANDLER;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
@@ -73,6 +74,7 @@ public class OpensearchSinkBuilder<IN> {
     private Integer socketTimeout;
     private Boolean allowInsecure;
     private RestClientFactory restClientFactory;
+    private FailureHandler failureHandler = DEFAULT_FAILURE_HANDLER;
 
     public OpensearchSinkBuilder() {
         restClientFactory = new DefaultRestClientFactory();
@@ -301,6 +303,19 @@ public class OpensearchSinkBuilder<IN> {
     }
 
     /**
+     * Allows to set custom failure handler. If not set, then the DEFAULT_FAILURE_HANDLER will be
+     * used which throws a runtime exception upon receiving a failure.
+     *
+     * @param failureHandler the custom handler
+     * @return this builder
+     */
+    public OpensearchSinkBuilder<IN> setFailureHandler(FailureHandler failureHandler) {
+        checkNotNull(failureHandler);
+        this.failureHandler = failureHandler;
+        return self();
+    }
+
+    /**
      * Constructs the {@link OpensearchSink} with the properties configured this builder.
      *
      * @return {@link OpensearchSink}
@@ -318,7 +333,8 @@ public class OpensearchSinkBuilder<IN> {
                 deliveryGuarantee,
                 bulkProcessorConfig,
                 networkClientConfig,
-                restClientFactory);
+                restClientFactory,
+                failureHandler);
     }
 
     private NetworkClientConfig buildNetworkClientConfig() {
