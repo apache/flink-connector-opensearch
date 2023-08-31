@@ -75,6 +75,23 @@ under the License.
 		<flink.parent.artifactId>flink-connector-opensearch-parent</flink.parent.artifactId>
 	</properties>
 
+	<distributionManagement>
+		<repository>
+			<id>decodable-mvn-releases-local</id>
+			<name>Decodable mvn Releases Local</name>
+			<url>
+				https://decodable-671293015970.d.codeartifact.us-west-2.amazonaws.com/maven/decodable-mvn-releases-local
+			</url>
+		</repository>
+		<snapshotRepository>
+			<id>decodable-mvn-snapshots-local</id>
+			<name>Decodable mvn Snapshots Local</name>
+			<url>
+				https://decodable-671293015970.d.codeartifact.us-west-2.amazonaws.com/maven/decodable-mvn-snapshots-local
+			</url>
+		</snapshotRepository>
+	</distributionManagement>
+
 	<dependencies>
 		<!-- Root dependencies for all projects -->
 
