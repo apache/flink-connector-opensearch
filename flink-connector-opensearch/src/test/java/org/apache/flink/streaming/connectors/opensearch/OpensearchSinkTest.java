@@ -320,7 +320,7 @@ public class OpensearchSinkTest {
                 new OpensearchSink.Builder<>(
                         Arrays.asList(new HttpHost("localhost", server.getLocalPort())),
                         new SimpleSinkFunction<String>());
-        builder.setBulkFlushInterval(500);
+        builder.setBulkFlushInterval(1000);
         builder.setFailureHandler(new NoOpFailureHandler());
 
         final OpensearchSink<String> sink = builder.build();
@@ -379,7 +379,7 @@ public class OpensearchSinkTest {
                 new OpensearchSink.Builder<>(
                         Arrays.asList(new HttpHost("localhost", server.getLocalPort())),
                         new SimpleSinkFunction<String>());
-        builder.setBulkFlushInterval(500);
+        builder.setBulkFlushInterval(1000);
         // use a failure handler that simply re-adds requests
         builder.setFailureHandler(new DummyRetryFailureHandler());
 
@@ -571,7 +571,7 @@ public class OpensearchSinkTest {
 
     private static void awaitForCondition(Supplier<Boolean> condition) throws InterruptedException {
         while (!condition.get()) {
-            Thread.sleep(10);
+            Thread.sleep(1);
         }
     }
 
