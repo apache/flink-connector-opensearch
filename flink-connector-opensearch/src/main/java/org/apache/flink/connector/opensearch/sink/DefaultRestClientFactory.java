@@ -24,6 +24,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.opensearch.client.RestClientBuilder;
 
@@ -85,8 +86,11 @@ public class DefaultRestClientFactory implements RestClientFactory {
 
         if (networkClientConfig.isAllowInsecure().orElse(false)) {
             try {
-                httpClientBuilder.setSSLContext(
-                        SSLContexts.custom().loadTrustMaterial(new TrustAllStrategy()).build());
+                httpClientBuilder
+                        .setSSLContext(
+                            SSLContexts.custom().loadTrustMaterial(new TrustAllStrategy()).build())
+                        .setSSLHostnameVerifier(
+                            SSLIOSessionStrategy.ALLOW_ALL_HOSTNAME_VERIFIER);
             } catch (final NoSuchAlgorithmException
                     | KeyStoreException
                     | KeyManagementException ex) {
