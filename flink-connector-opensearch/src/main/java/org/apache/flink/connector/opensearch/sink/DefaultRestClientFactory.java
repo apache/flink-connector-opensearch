@@ -88,9 +88,10 @@ public class DefaultRestClientFactory implements RestClientFactory {
             try {
                 httpClientBuilder
                         .setSSLContext(
-                            SSLContexts.custom().loadTrustMaterial(new TrustAllStrategy()).build())
-                        .setSSLHostnameVerifier(
-                            SSLIOSessionStrategy.ALLOW_ALL_HOSTNAME_VERIFIER);
+                                SSLContexts.custom()
+                                        .loadTrustMaterial(new TrustAllStrategy())
+                                        .build())
+                        .setSSLHostnameVerifier(SSLIOSessionStrategy.ALLOW_ALL_HOSTNAME_VERIFIER);
             } catch (final NoSuchAlgorithmException
                     | KeyStoreException
                     | KeyManagementException ex) {
