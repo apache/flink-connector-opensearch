@@ -1,0 +1,203 @@
+################################################################################
+#  Licensed to the Apache Software Foundation (ASF) under one
+#  or more contributor license agreements.  See the NOTICE file
+#  distributed with this work for additional information
+#  regarding copyright ownership.  The ASF licenses this file
+#  to you under the Apache License, Version 2.0 (the
+#  "License"); you may not use this file except in compliance
+#  with the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+
+on:
+  workflow_call:
+    inputs:
+      flink_url:
+        description: "Url to Flink binary. If not set the URL is inferred from the version parameter."
+        required: false
+        type: string
+      flink_version:
+        description: "Flink version to test against."
+        required: true
+        type: string
+      jdk_version:
+        description: "Jdk version to test against."
+        required: false
+        default: 8, 11
+        type: string
+      opensearch_version:
+        description: "Open Search version to test against."
+        required: true
+        type: string
+      cache_flink_binary:
+        description: "Whether to cache the Flink binary. If not set this parameter is inferred from the version parameter. Must be set if 'flink_url' is used."
+        required: false
+        type: boolean
+      timeout_global:
+        description: "The timeout in minutes for the entire workflow."
+        required: false
+        type: number
+        default: 80
+      timeout_test:
+        description: "The timeout in minutes for the test compile&step."
+        required: false
+        type: number
+        default: 50
+      run_dependency_convergence:
+        description: "Whether to run the dependency convergence check"
+        required: false
+        type: boolean
+        default: true
+      connector_branch:
+        description: "Branch that need to be checked out"
+        required: false
+        type: string
+
+jobs:
+  compile_and_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        jdk: ${{ fromJSON(format('[{0}]', inputs.jdk_version)) }}
+    timeout-minutes: ${{ inputs.timeout_global }}
+    env:
+      MVN_COMMON_OPTIONS: -U -B --no-transfer-progress -Dflink.version=${{ inputs.flink_version }} -Dopensearch.major=${{ inputs.opensearch_version }}
+      MVN_CONNECTION_OPTIONS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
+      FLINK_CACHE_DIR: "/tmp/cache/flink"
+      MVN_BUILD_OUTPUT_FILE: "/tmp/mvn_build_output.out"
+      MVN_VALIDATION_DIR: "/tmp/flink-validation-deployment"
+    steps:
+      - run: echo "Running CI pipeline for JDK version ${{ matrix.jdk }}"
+
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          ref: "${{ inputs.connector_branch }}"
+
+      - name: Set JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.jdk }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set Maven 3.8.6
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: 3.8.6
+
+      - name: "Enable dependency convergence check"
+        if: ${{ inputs.run_dependency_convergence }}
+        run: echo "MVN_DEPENDENCY_CONVERGENCE=-Dflink.convergence.phase=install -Pcheck-convergence" >> $GITHUB_ENV
+
+      - name: "Determine Flink binary url"
+        run: |
+          binary_url=${{ inputs.flink_url }}
+          cache_binary=${{ inputs.cache_flink_binary }}
+          if [ "$binary_url" = "" ]; then
+            if [[ "${{ inputs.flink_version }}" = *-SNAPSHOT ]]; then
+              binary_url=https://s3.amazonaws.com/flink-nightly/flink-${{ inputs.flink_version }}-bin-scala_2.12.tgz
+              cache_binary=false
+            else
+              binary_url=https://archive.apache.org/dist/flink/flink-${{ inputs.flink_version }}/flink-${{ inputs.flink_version }}-bin-scala_2.12.tgz
+              cache_binary=true
+            fi
+          else
+            if [ "$cache_binary" = "" ]; then
+              echo "'cache_flink_binary' must be set when manually specifying a 'flink_url'."
+              exit 1
+            fi
+          fi
+          echo "binary_url=$binary_url" >> ${GITHUB_ENV}
+          echo "cache_binary=$cache_binary" >> ${GITHUB_ENV}
+
+      - name: "Print Flink binary url / caching"
+        run: echo "${{ env.binary_url }} / caching=${{ env.cache_binary }}"
+
+      - name: Create cache dirs
+        run: mkdir -p ${{ env.FLINK_CACHE_DIR }}
+
+      - name: Restore cached Flink binary
+        if: ${{ env.cache_binary == 'true' }}
+        uses: actions/cache/restore@v3
+        id: restore-cache-flink
+        with:
+          path: ${{ env.FLINK_CACHE_DIR }}
+          key: ${{ env.binary_url }}
+
+      - name: Download Flink binary
+        working-directory: ${{ env.FLINK_CACHE_DIR }}
+        if: steps.restore-cache-flink.outputs.cache-hit != 'true'
+        run: wget -q -c ${{ env.binary_url }} -O - | tar -xz
+
+      - name: Cache Flink binary
+        if: ${{ env.cache_binary == 'true' }}
+        uses: actions/cache/save@v3
+        id: cache-flink
+        with:
+          path: ${{ env.FLINK_CACHE_DIR }}
+          key: ${{ env.binary_url }}
+
+      - name: Compile and test
+        timeout-minutes: ${{ inputs.timeout_test }}
+        run: |
+          set -o pipefail
+
+          mvn clean deploy ${MVN_COMMON_OPTIONS} \
+            -DaltDeploymentRepository=validation_repository::default::file:${{ env.MVN_VALIDATION_DIR }} \
+            -Dscala-2.12 \
+            -Prun-end-to-end-tests -DdistDir=${{ env.FLINK_CACHE_DIR }}/flink-${{ inputs.flink_version }} \
+            ${{ env.MVN_DEPENDENCY_CONVERGENCE }} \
+            ${{ env.MVN_CONNECTION_OPTIONS }} \
+            -Dlog4j.configurationFile=file://$(pwd)/tools/ci/log4j.properties \
+            | tee ${{ env.MVN_BUILD_OUTPUT_FILE }}
+
+      - name: Check licensing
+        run: |
+          mvn ${MVN_COMMON_OPTIONS} exec:java@check-license -N \
+            -Dexec.args="${{ env.MVN_BUILD_OUTPUT_FILE }} $(pwd) ${{ env.MVN_VALIDATION_DIR }}" \
+            ${{ env.MVN_CONNECTION_OPTIONS }} \
+            -Dlog4j.configurationFile=file://$(pwd)/tools/ci/log4j.properties
+
+      - name: Print JVM thread dumps when cancelled
+        if: ${{ failure() }}
+        run: |
+          # ----------------------------------------------------------------------------
+          # Copyright 2023 The Netty Project
+          #
+          # ----------------------------------------------------------------------------
+          # Source: https://github.com/netty/netty/blob/main/.github/actions/thread-dump-jvms/action.yml
+          echo "$OSTYPE"
+          if [[ "$OSTYPE" == "linux-gnu"* ]] && command -v sudo &> /dev/null; then
+            echo "Setting up JVM thread dumps"
+            # use jattach so that Java processes in docker containers are also covered
+            # download jattach
+            curl -s -L -o /tmp/jattach https://github.com/apangin/jattach/releases/download/v2.1/jattach
+            if command -v sha256sum &> /dev/null; then
+              # verify hash of jattach binary
+              sha256sum -c <(echo "07885fdc782e02e7302c6d190f54c3930afa10a38140365adf54076ec1086a8e  /tmp/jattach") || exit 1
+            fi
+            chmod +x /tmp/jattach
+            for java_pid in $(sudo pgrep java); do
+              echo "----------------------- pid $java_pid -----------------------"
+              echo "command line: $(sudo cat /proc/$java_pid/cmdline | xargs -0 echo)"
+              sudo /tmp/jattach $java_pid jcmd VM.command_line || true
+              sudo /tmp/jattach $java_pid jcmd "Thread.print -l"
+              sudo /tmp/jattach $java_pid jcmd GC.heap_info || true
+            done
+          else
+            for java_pid in $(jps -q -J-XX:+PerfDisableSharedMem); do
+              echo "----------------------- pid $java_pid -----------------------"
+              jcmd $java_pid VM.command_line || true
+              jcmd $java_pid Thread.print -l
+              jcmd $java_pid GC.heap_info || true
+            done
+          fi
+          exit 0

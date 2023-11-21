@@ -33,15 +33,18 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.bootstrap.HttpServer;
 import org.apache.http.impl.bootstrap.ServerBootstrap;
 import org.apache.http.protocol.HttpRequestHandlerMapper;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.opensearch.Version;
 import org.opensearch.action.ActionRequest;
 import org.opensearch.action.DocWriteRequest.OpType;
 import org.opensearch.action.bulk.BulkItemResponse;
 import org.opensearch.action.bulk.BulkItemResponse.Failure;
 import org.opensearch.action.bulk.BulkResponse;
+import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.Requests;
 import org.opensearch.common.xcontent.ToXContent;
@@ -51,6 +54,7 @@ import org.opensearch.index.shard.ShardId;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
@@ -106,6 +110,21 @@ public class OpensearchSinkTest {
         responses.clear();
     }
 
+    private Failure getFailure(String index, String type, String id, Exception cause)
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
+                    InstantiationException, IllegalAccessException {
+        final Class<?> aClass = Class.forName(Failure.class.getName());
+        if (Version.CURRENT.toString().startsWith("1")) {
+            return (Failure)
+                    aClass.getConstructor(String.class, String.class, String.class, Exception.class)
+                            .newInstance(index, type, id, cause);
+        } else {
+            return (Failure)
+                    aClass.getConstructor(String.class, String.class, Exception.class)
+                            .newInstance(index, id, cause);
+        }
+    }
+
     /**
      * Tests that any item failure in the listener callbacks is rethrown on an immediately following
      * invoke call.
@@ -128,7 +147,7 @@ public class OpensearchSinkTest {
                         new BulkItemResponse(
                                 1,
                                 OpType.INDEX,
-                                new Failure(
+                                getFailure(
                                         "test",
                                         "_doc",
                                         "1",
@@ -167,7 +186,7 @@ public class OpensearchSinkTest {
                         new BulkItemResponse(
                                 1,
                                 OpType.INDEX,
-                                new Failure(
+                                getFailure(
                                         "test",
                                         "_doc",
                                         "1",
@@ -178,6 +197,41 @@ public class OpensearchSinkTest {
                 .getCause()
                 .getCause()
                 .hasMessageContaining("artificial failure for record");
+    }
+
+    private IndexResponse getIndexResponse(
+            ShardId shardId,
+            String type,
+            String id,
+            long seqNo,
+            long primaryTerm,
+            long version,
+            boolean created)
+            throws NoSuchMethodException, InvocationTargetException, InstantiationException,
+                    IllegalAccessException, ClassNotFoundException {
+        final Class<?> aClass = Class.forName(IndexResponse.class.getName());
+        if (Version.CURRENT.toString().startsWith("1")) {
+            return (IndexResponse)
+                    aClass.getConstructor(
+                                    ShardId.class,
+                                    String.class,
+                                    String.class,
+                                    long.class,
+                                    long.class,
+                                    long.class,
+                                    boolean.class)
+                            .newInstance(shardId, type, id, seqNo, primaryTerm, version, created);
+        } else {
+            return (IndexResponse)
+                    aClass.getConstructor(
+                                    ShardId.class,
+                                    String.class,
+                                    long.class,
+                                    long.class,
+                                    long.class,
+                                    boolean.class)
+                            .newInstance(shardId, id, seqNo, primaryTerm, version, created);
+        }
     }
 
     /**
@@ -206,7 +260,7 @@ public class OpensearchSinkTest {
                         new BulkItemResponse(
                                 1,
                                 OpType.INDEX,
-                                new IndexResponse(
+                                getIndexResponse(
                                         new ShardId("test", "-", 0), "_doc", "1", 0, 0, 1, true))));
 
         responses.add(
@@ -214,7 +268,7 @@ public class OpensearchSinkTest {
                         new BulkItemResponse(
                                 2,
                                 OpType.INDEX,
-                                new Failure(
+                                getFailure(
                                         "test",
                                         "_doc",
                                         "2",
@@ -334,7 +388,7 @@ public class OpensearchSinkTest {
                         new BulkItemResponse(
                                 1,
                                 OpType.INDEX,
-                                new IndexResponse(
+                                getIndexResponse(
                                         new ShardId("test", "-", 0), "_doc", "1", 0, 0, 1, true))));
 
         // Let the whole bulk request fail
@@ -396,7 +450,7 @@ public class OpensearchSinkTest {
                         new BulkItemResponse(
                                 1,
                                 OpType.INDEX,
-                                new Failure(
+                                getFailure(
                                         "test",
                                         "_doc",
                                         "1",
@@ -407,7 +461,7 @@ public class OpensearchSinkTest {
                         new BulkItemResponse(
                                 2,
                                 OpType.INDEX,
-                                new IndexResponse(
+                                getIndexResponse(
                                         new ShardId("test", "-", 0), "_doc", "2", 0, 0, 1, true))));
 
         testHarness.processElement(new StreamRecord<>("msg"));
@@ -472,7 +526,7 @@ public class OpensearchSinkTest {
                         new BulkItemResponse(
                                 1,
                                 OpType.INDEX,
-                                new Failure(
+                                getFailure(
                                         "test",
                                         "_doc",
                                         "1",
@@ -514,7 +568,21 @@ public class OpensearchSinkTest {
             Map<java.lang.String, Object> json = new HashMap<>();
             json.put("data", element);
 
-            indexer.add(Requests.indexRequest().index("index").type("type").id("id").source(json));
+            IndexRequest index = Requests.indexRequest().index("index");
+            if (Version.CURRENT.toString().startsWith("1")) {
+                Class<?> clazz = index.getClass();
+                try {
+                    index =
+                            (IndexRequest)
+                                    clazz.getMethod("type", java.lang.String.class)
+                                            .invoke(index, "type");
+                } catch (InvocationTargetException
+                        | IllegalAccessException
+                        | NoSuchMethodException e) {
+                    Assertions.fail("Fail", e);
+                }
+            }
+            indexer.add(index.id("id").source(json));
         }
     }
 
