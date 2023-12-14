@@ -59,6 +59,18 @@ under the License.
 			<version>${flink.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-opensearch-base</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-opensearch-base</artifactId>
+			<version>${project.parent.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
 
 		<!-- Table ecosystem -->
 
@@ -89,29 +101,6 @@ under the License.
 					<artifactId>httpcore-nio</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-
-		<!-- We need to include httpcore-nio again in the correct version due to the exclusion above -->
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpcore-nio</artifactId>
-			<version>4.4.12</version>
-		</dependency>
-
-		<!-- Tests -->
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-test-utils</artifactId>
-			<version>${flink.version}</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-runtime</artifactId>
-			<version>${flink.version}</version>
-			<type>test-jar</type>
-			<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -169,7 +158,7 @@ under the License.
 			<artifactId>opensearch-testcontainers</artifactId>
 			<scope>test</scope>
 		</dependency>
-		
+
 		<!-- ArchUit test dependencies -->
 
 		<dependency>

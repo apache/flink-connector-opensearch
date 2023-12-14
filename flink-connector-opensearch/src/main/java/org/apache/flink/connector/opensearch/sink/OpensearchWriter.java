@@ -18,6 +18,7 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.SinkWriter;
@@ -30,7 +31,6 @@ import org.apache.http.HttpHost;
 import org.opensearch.action.ActionListener;
 import org.opensearch.action.DocWriteRequest;
 import org.opensearch.action.bulk.BackoffPolicy;
-import org.opensearch.action.bulk.BulkItemResponse;
 import org.opensearch.action.bulk.BulkProcessor;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
@@ -50,8 +50,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.BiConsumer;
 
-import static org.apache.flink.util.ExceptionUtils.firstOrSuppressed;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
 class OpensearchWriter<IN> implements SinkWriter<IN> {
@@ -323,60 +323,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
         }
     }
 
-    /**
-     * A strict implementation that fails if either the whole bulk request failed or any of its
-     * actions.
-     */
-    static class DefaultBulkResponseInspector implements BulkResponseInspector {
-
-        @VisibleForTesting final FailureHandler failureHandler;
-
-        DefaultBulkResponseInspector() {
-            this(new DefaultFailureHandler());
-        }
-
-        DefaultBulkResponseInspector(FailureHandler failureHandler) {
-            this.failureHandler = checkNotNull(failureHandler);
-        }
-
-        @Override
-        public void inspect(BulkRequest request, BulkResponse response) {
-            if (!response.hasFailures()) {
-                return;
-            }
-
-            Throwable chainedFailures = null;
-            for (int i = 0; i < response.getItems().length; i++) {
-                final BulkItemResponse itemResponse = response.getItems()[i];
-                if (!itemResponse.isFailed()) {
-                    continue;
-                }
-                final Throwable failure = itemResponse.getFailure().getCause();
-                if (failure == null) {
-                    continue;
-                }
-                final RestStatus restStatus = itemResponse.getFailure().getStatus();
-                final DocWriteRequest<?> actionRequest = request.requests().get(i);
-
-                chainedFailures =
-                        firstOrSuppressed(
-                                wrapException(restStatus, failure, actionRequest), chainedFailures);
-            }
-            if (chainedFailures == null) {
-                return;
-            }
-            failureHandler.onFailure(chainedFailures);
-        }
-    }
-
-    static class DefaultFailureHandler implements FailureHandler {
-
-        @Override
-        public void onFailure(Throwable failure) {
-            if (failure instanceof FlinkRuntimeException) {
-                throw (FlinkRuntimeException) failure;
-            }
-            throw new FlinkRuntimeException(failure);
-        }
-    }
+    @Internal
+    interface BulkRequestConsumerFactory
+            extends BiConsumer<BulkRequest, ActionListener<BulkResponse>> {}
 }
