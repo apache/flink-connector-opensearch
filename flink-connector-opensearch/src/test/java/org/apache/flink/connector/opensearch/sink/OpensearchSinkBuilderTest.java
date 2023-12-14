@@ -21,7 +21,6 @@ import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.Sink.InitContext;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.opensearch.sink.BulkResponseInspector.BulkResponseInspectorFactory;
-import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultBulkResponseInspector;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 import org.apache.flink.streaming.runtime.tasks.TestProcessingTimeService;

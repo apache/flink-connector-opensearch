@@ -18,7 +18,6 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
-import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultBulkResponseInspector;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.TestLoggerExtension;
 

@@ -21,8 +21,6 @@ import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.connector.opensearch.OpensearchUtil;
-import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultBulkResponseInspector;
-import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultFailureHandler;
 import org.apache.flink.connector.opensearch.test.DockerImageVersions;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;

@@ -21,8 +21,6 @@ package org.apache.flink.connector.opensearch.sink;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.opensearch.sink.BulkResponseInspector.BulkResponseInspectorFactory;
-import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultBulkResponseInspector;
-import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultFailureHandler;
 import org.apache.flink.util.InstantiationUtil;
 
 import org.apache.http.HttpHost;
