@@ -77,6 +77,23 @@ under the License.
 			<artifactId>opensearch-testcontainers</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-opensearch-base</artifactId>
+			<version>${project.parent.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.opensearch</groupId>
+					<artifactId>opensearch</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.opensearch.client</groupId>
+					<artifactId>opensearch-rest-high-level-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 	</dependencies>
 
 	<build>

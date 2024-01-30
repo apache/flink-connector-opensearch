@@ -1,0 +1,55 @@
+flink-sql-connector-opensearch
+Copyright 2014-2023 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+This project bundles the following dependencies under the Apache Software License 2.0. (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+- com.fasterxml.jackson.core:jackson-core:2.15.3
+- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.15.3
+- com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.15.3
+- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.3
+- com.github.spullara.mustache.java:compiler:0.9.10
+- commons-codec:commons-codec:1.15
+- commons-logging:commons-logging:1.2
+- org.apache.httpcomponents:httpasyncclient:4.1.5
+- org.apache.httpcomponents:httpclient:4.5.13
+- org.apache.httpcomponents:httpcore:4.4.14
+- org.apache.httpcomponents:httpcore-nio:4.4.12
+- org.apache.logging.log4j:log4j-jul:2.20.0
+- org.apache.lucene:lucene-backward-codecs:9.7.0
+- org.apache.lucene:lucene-analysis-common:9.7.0
+- org.apache.lucene:lucene-core:9.7.0
+- org.apache.lucene:lucene-grouping:9.7.0
+- org.apache.lucene:lucene-highlighter:9.7.0
+- org.apache.lucene:lucene-join:9.7.0
+- org.apache.lucene:lucene-memory:9.7.0
+- org.apache.lucene:lucene-misc:9.7.0
+- org.apache.lucene:lucene-queries:9.7.0
+- org.apache.lucene:lucene-queryparser:9.7.0
+- org.apache.lucene:lucene-sandbox:9.7.0
+- org.apache.lucene:lucene-spatial3d:9.7.0
+- org.apache.lucene:lucene-spatial-extras:9.7.0
+- org.apache.lucene:lucene-suggest:9.7.0
+- org.opensearch.client:opensearch-rest-client:2.11.1
+- org.opensearch.client:opensearch-rest-high-level-client:2.11.1
+- org.opensearch:opensearch-cli:2.11.1
+- org.opensearch:opensearch-common:2.11.1
+- org.opensearch:opensearch-compress:2.11.1
+- org.opensearch:opensearch-core:2.11.1
+- org.opensearch:opensearch-geo:2.11.1
+- org.opensearch:opensearch:2.11.1
+- org.opensearch:opensearch-secure-sm:2.11.1
+- org.opensearch:opensearch-telemetry:2.11.1
+- org.opensearch:opensearch-x-content:2.11.1
+- org.opensearch.plugin:aggs-matrix-stats-client:2.11.1
+- org.opensearch.plugin:lang-mustache-client:2.11.1
+- org.opensearch.plugin:mapper-extras-client:2.11.1
+- org.opensearch.plugin:parent-join-client:2.11.1
+- org.opensearch.plugin:rank-eval-client:2.11.1
+
+This project bundles the following dependencies under the BSD license.
+See bundled license files for details.
+
+- com.github.luben:zstd-jni:1.5.5-5

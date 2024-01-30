@@ -18,6 +18,7 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
+import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.SinkWriter;
@@ -50,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import static org.apache.flink.util.ExceptionUtils.firstOrSuppressed;
 import static org.apache.flink.util.Preconditions.checkNotNull;
@@ -345,4 +347,8 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
             }
         }
     }
+
+    @Internal
+    interface BulkRequestConsumerFactory
+            extends BiConsumer<BulkRequest, ActionListener<BulkResponse>> {}
 }

@@ -87,7 +87,7 @@ The example below shows how to configure and create a sink:
 
 ```java
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.connector.opensearch.sink.OpensearchSinkBuilder;
+import org.apache.flink.connector.opensearch.sink.Opensearch2SinkBuilder;
 import org.apache.flink.streaming.api.datastream.DataStream;
 
 import org.apache.http.HttpHost;

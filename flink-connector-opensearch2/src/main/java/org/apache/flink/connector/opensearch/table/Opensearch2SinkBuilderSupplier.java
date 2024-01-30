@@ -16,20 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.flink.connector.opensearch.sink;
+package org.apache.flink.connector.opensearch.table;
 
-import org.apache.flink.annotation.Internal;
+import org.apache.flink.connector.opensearch.sink.Opensearch2SinkBuilder;
 
-import org.opensearch.action.ActionListener;
-import org.opensearch.action.bulk.BulkRequest;
-import org.opensearch.action.bulk.BulkResponse;
+import java.util.function.Supplier;
 
-import java.util.function.BiConsumer;
-
-/**
- * {@link BulkRequestConsumerFactory} is used to bridge incompatible Opensearch Java API calls
- * across different Opensearch versions.
- */
-@Internal
-interface BulkRequestConsumerFactory
-        extends BiConsumer<BulkRequest, ActionListener<BulkResponse>> {}
+interface Opensearch2SinkBuilderSupplier<T> extends Supplier<Opensearch2SinkBuilder<T>> {}
