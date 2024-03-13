@@ -58,11 +58,6 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpensearchWriter.class);
 
-    public static final FailureHandler DEFAULT_FAILURE_HANDLER =
-            ex -> {
-                throw new FlinkRuntimeException(ex);
-            };
-
     private final OpensearchEmitter<? super IN> emitter;
     private final MailboxExecutor mailboxExecutor;
     private final boolean flushOnCheckpoint;
@@ -70,7 +65,6 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
     private final RestHighLevelClient client;
     private final RequestIndexer requestIndexer;
     private final Counter numBytesOutCounter;
-    private final FailureHandler failureHandler;
 
     private long pendingActions = 0;
     private boolean checkpointInProgress = false;
@@ -102,7 +96,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
             SinkWriterMetricGroup metricGroup,
             MailboxExecutor mailboxExecutor,
             RestClientFactory restClientFactory,
-            FailureHandler failureHandler) {
+            BulkResponseInspector bulkResponseInspector) {
         this.emitter = checkNotNull(emitter);
         this.flushOnCheckpoint = flushOnCheckpoint;
         this.mailboxExecutor = checkNotNull(mailboxExecutor);
@@ -113,7 +107,8 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
                         builder, new DefaultRestClientConfig(networkClientConfig));
 
         this.client = new RestHighLevelClient(builder);
-        this.bulkProcessor = createBulkProcessor(bulkProcessorConfig);
+        this.bulkProcessor =
+                createBulkProcessor(bulkProcessorConfig, checkNotNull(bulkResponseInspector));
         this.requestIndexer = new DefaultRequestIndexer(metricGroup.getNumRecordsSendCounter());
         checkNotNull(metricGroup);
         metricGroup.setCurrentSendTimeGauge(() -> ackTime - lastSendTime);
@@ -123,7 +118,6 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
         } catch (Exception e) {
             throw new FlinkRuntimeException("Failed to open the OpensearchEmitter", e);
         }
-        this.failureHandler = failureHandler;
     }
 
     @Override
@@ -163,7 +157,8 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
         client.close();
     }
 
-    private BulkProcessor createBulkProcessor(BulkProcessorConfig bulkProcessorConfig) {
+    private BulkProcessor createBulkProcessor(
+            BulkProcessorConfig bulkProcessorConfig, BulkResponseInspector bulkResponseInspector) {
 
         final BulkProcessor.Builder builder =
                 BulkProcessor.builder(
@@ -180,7 +175,7 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
                                         bulkResponseActionListener);
                             }
                         },
-                        new BulkListener());
+                        new BulkListener(bulkResponseInspector));
 
         if (bulkProcessorConfig.getBulkFlushMaxActions() != -1) {
             builder.setBulkActions(bulkProcessorConfig.getBulkFlushMaxActions());
@@ -223,6 +218,12 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
 
     private class BulkListener implements BulkProcessor.Listener {
 
+        private final BulkResponseInspector bulkResponseInspector;
+
+        public BulkListener(BulkResponseInspector bulkResponseInspector) {
+            this.bulkResponseInspector = bulkResponseInspector;
+        }
+
         @Override
         public void beforeBulk(long executionId, BulkRequest request) {
             LOG.info("Sending bulk of {} actions to Opensearch.", request.numberOfActions());
@@ -245,6 +246,11 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
                     },
                     "opensearchErrorCallback");
         }
+
+        private void extractFailures(BulkRequest request, BulkResponse response) {
+            bulkResponseInspector.inspect(request, response);
+            pendingActions -= request.numberOfActions();
+        }
     }
 
     private void enqueueActionInMailbox(
@@ -257,35 +263,6 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
             return;
         }
         mailboxExecutor.execute(action, actionName);
-    }
-
-    private void extractFailures(BulkRequest request, BulkResponse response) {
-        if (!response.hasFailures()) {
-            pendingActions -= request.numberOfActions();
-            return;
-        }
-
-        Throwable chainedFailures = null;
-        for (int i = 0; i < response.getItems().length; i++) {
-            final BulkItemResponse itemResponse = response.getItems()[i];
-            if (!itemResponse.isFailed()) {
-                continue;
-            }
-            final Throwable failure = itemResponse.getFailure().getCause();
-            if (failure == null) {
-                continue;
-            }
-            final RestStatus restStatus = itemResponse.getFailure().getStatus();
-            final DocWriteRequest<?> actionRequest = request.requests().get(i);
-
-            chainedFailures =
-                    firstOrSuppressed(
-                            wrapException(restStatus, failure, actionRequest), chainedFailures);
-        }
-        if (chainedFailures == null) {
-            return;
-        }
-        failureHandler.onFailure(chainedFailures);
     }
 
     private static Throwable wrapException(
@@ -343,6 +320,63 @@ class OpensearchWriter<IN> implements SinkWriter<IN> {
                 pendingActions++;
                 bulkProcessor.add(updateRequest);
             }
+        }
+    }
+
+    /**
+     * A strict implementation that fails if either the whole bulk request failed or any of its
+     * actions.
+     */
+    static class DefaultBulkResponseInspector implements BulkResponseInspector {
+
+        @VisibleForTesting final FailureHandler failureHandler;
+
+        DefaultBulkResponseInspector() {
+            this(new DefaultFailureHandler());
+        }
+
+        DefaultBulkResponseInspector(FailureHandler failureHandler) {
+            this.failureHandler = checkNotNull(failureHandler);
+        }
+
+        @Override
+        public void inspect(BulkRequest request, BulkResponse response) {
+            if (!response.hasFailures()) {
+                return;
+            }
+
+            Throwable chainedFailures = null;
+            for (int i = 0; i < response.getItems().length; i++) {
+                final BulkItemResponse itemResponse = response.getItems()[i];
+                if (!itemResponse.isFailed()) {
+                    continue;
+                }
+                final Throwable failure = itemResponse.getFailure().getCause();
+                if (failure == null) {
+                    continue;
+                }
+                final RestStatus restStatus = itemResponse.getFailure().getStatus();
+                final DocWriteRequest<?> actionRequest = request.requests().get(i);
+
+                chainedFailures =
+                        firstOrSuppressed(
+                                wrapException(restStatus, failure, actionRequest), chainedFailures);
+            }
+            if (chainedFailures == null) {
+                return;
+            }
+            failureHandler.onFailure(chainedFailures);
+        }
+    }
+
+    static class DefaultFailureHandler implements FailureHandler {
+
+        @Override
+        public void onFailure(Throwable failure) {
+            if (failure instanceof FlinkRuntimeException) {
+                throw (FlinkRuntimeException) failure;
+            }
+            throw new FlinkRuntimeException(failure);
         }
     }
 }

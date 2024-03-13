@@ -20,6 +20,9 @@ package org.apache.flink.connector.opensearch.sink;
 
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.apache.flink.connector.opensearch.sink.BulkResponseInspector.BulkResponseInspectorFactory;
+import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultBulkResponseInspector;
+import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultFailureHandler;
 import org.apache.flink.util.InstantiationUtil;
 
 import org.apache.http.HttpHost;
@@ -27,7 +30,6 @@ import org.apache.http.HttpHost;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.flink.connector.opensearch.sink.OpensearchWriter.DEFAULT_FAILURE_HANDLER;
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 import static org.apache.flink.util.Preconditions.checkState;
@@ -74,7 +76,8 @@ public class OpensearchSinkBuilder<IN> {
     private Integer socketTimeout;
     private Boolean allowInsecure;
     private RestClientFactory restClientFactory;
-    private FailureHandler failureHandler = DEFAULT_FAILURE_HANDLER;
+    private FailureHandler failureHandler = new DefaultFailureHandler();
+    private BulkResponseInspectorFactory bulkResponseInspectorFactory;
 
     public OpensearchSinkBuilder() {
         restClientFactory = new DefaultRestClientFactory();
@@ -316,6 +319,20 @@ public class OpensearchSinkBuilder<IN> {
     }
 
     /**
+     * Overrides the default {@link BulkResponseInspectorFactory}. A custom {@link
+     * BulkResponseInspector}, for example, can change the failure handling and capture additional
+     * metrics. See {@link #failureHandler} for a simpler way of handling failures.
+     *
+     * @param bulkResponseInspectorFactory the factory
+     * @return this builder
+     */
+    public OpensearchSinkBuilder<IN> setBulkResponseInspectorFactory(
+            BulkResponseInspectorFactory bulkResponseInspectorFactory) {
+        this.bulkResponseInspectorFactory = checkNotNull(bulkResponseInspectorFactory);
+        return self();
+    }
+
+    /**
      * Constructs the {@link OpensearchSink} with the properties configured this builder.
      *
      * @return {@link OpensearchSink}
@@ -334,7 +351,13 @@ public class OpensearchSinkBuilder<IN> {
                 bulkProcessorConfig,
                 networkClientConfig,
                 restClientFactory,
-                failureHandler);
+                getBulkResponseInspectorFactory());
+    }
+
+    protected BulkResponseInspectorFactory getBulkResponseInspectorFactory() {
+        return this.bulkResponseInspectorFactory == null
+                ? new DefaultBulkResponseInspectorFactory(failureHandler)
+                : this.bulkResponseInspectorFactory;
     }
 
     private NetworkClientConfig buildNetworkClientConfig() {
@@ -394,5 +417,24 @@ public class OpensearchSinkBuilder<IN> {
                 + allowInsecure
                 + '\''
                 + '}';
+    }
+
+    /**
+     * Default factory for {@link FailureHandler}-bound {@link BulkResponseInspector
+     * BulkResponseInspectors}. A Static class is used instead of anonymous/lambda to avoid
+     * non-serializable references to {@link OpensearchSinkBuilder}.
+     */
+    static class DefaultBulkResponseInspectorFactory implements BulkResponseInspectorFactory {
+
+        private final FailureHandler failureHandler;
+
+        DefaultBulkResponseInspectorFactory(FailureHandler failureHandler) {
+            this.failureHandler = failureHandler;
+        }
+
+        @Override
+        public BulkResponseInspector apply(InitContext context) {
+            return new DefaultBulkResponseInspector(failureHandler);
+        }
     }
 }

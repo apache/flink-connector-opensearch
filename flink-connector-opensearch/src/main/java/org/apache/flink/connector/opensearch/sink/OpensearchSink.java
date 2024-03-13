@@ -23,6 +23,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.apache.flink.connector.opensearch.sink.BulkResponseInspector.BulkResponseInspectorFactory;
 
 import org.apache.http.HttpHost;
 
@@ -60,7 +61,7 @@ public class OpensearchSink<IN> implements Sink<IN> {
     private final NetworkClientConfig networkClientConfig;
     private final DeliveryGuarantee deliveryGuarantee;
     private final RestClientFactory restClientFactory;
-    private final FailureHandler failureHandler;
+    private final BulkResponseInspectorFactory bulkResponseInspectorFactory;
 
     OpensearchSink(
             List<HttpHost> hosts,
@@ -69,7 +70,7 @@ public class OpensearchSink<IN> implements Sink<IN> {
             BulkProcessorConfig buildBulkProcessorConfig,
             NetworkClientConfig networkClientConfig,
             RestClientFactory restClientFactory,
-            FailureHandler failureHandler) {
+            BulkResponseInspectorFactory bulkResponseInspectorFactory) {
         this.hosts = checkNotNull(hosts);
         checkArgument(!hosts.isEmpty(), "Hosts cannot be empty.");
         this.emitter = checkNotNull(emitter);
@@ -77,7 +78,7 @@ public class OpensearchSink<IN> implements Sink<IN> {
         this.buildBulkProcessorConfig = checkNotNull(buildBulkProcessorConfig);
         this.networkClientConfig = checkNotNull(networkClientConfig);
         this.restClientFactory = checkNotNull(restClientFactory);
-        this.failureHandler = checkNotNull(failureHandler);
+        this.bulkResponseInspectorFactory = checkNotNull(bulkResponseInspectorFactory);
     }
 
     @Override
@@ -91,11 +92,16 @@ public class OpensearchSink<IN> implements Sink<IN> {
                 context.metricGroup(),
                 context.getMailboxExecutor(),
                 restClientFactory,
-                failureHandler);
+                bulkResponseInspectorFactory.apply(context::metricGroup));
     }
 
     @VisibleForTesting
     DeliveryGuarantee getDeliveryGuarantee() {
         return deliveryGuarantee;
+    }
+
+    @VisibleForTesting
+    BulkResponseInspectorFactory getBulkResponseInspectorFactory() {
+        return bulkResponseInspectorFactory;
     }
 }

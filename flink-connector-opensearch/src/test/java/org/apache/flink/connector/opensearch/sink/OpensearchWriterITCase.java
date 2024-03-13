@@ -21,6 +21,8 @@ import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.connector.opensearch.OpensearchUtil;
+import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultBulkResponseInspector;
+import org.apache.flink.connector.opensearch.sink.OpensearchWriter.DefaultFailureHandler;
 import org.apache.flink.connector.opensearch.test.DockerImageVersions;
 import org.apache.flink.metrics.Counter;
 import org.apache.flink.metrics.Gauge;
@@ -56,7 +58,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.flink.connector.opensearch.sink.OpensearchTestClient.buildMessage;
-import static org.apache.flink.connector.opensearch.sink.OpensearchWriter.DEFAULT_FAILURE_HANDLER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Tests for {@link OpensearchWriter}. */
@@ -280,7 +281,7 @@ class OpensearchWriterITCase {
                 flushOnCheckpoint,
                 bulkProcessorConfig,
                 InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()),
-                DEFAULT_FAILURE_HANDLER);
+                new DefaultFailureHandler());
     }
 
     private OpensearchWriter<Tuple2<Integer, String>> createWriter(
@@ -306,7 +307,7 @@ class OpensearchWriterITCase {
                 flushOnCheckpoint,
                 bulkProcessorConfig,
                 metricGroup,
-                DEFAULT_FAILURE_HANDLER);
+                new DefaultFailureHandler());
     }
 
     private OpensearchWriter<Tuple2<Integer, String>> createWriter(
@@ -331,7 +332,7 @@ class OpensearchWriterITCase {
                 metricGroup,
                 new TestMailbox(),
                 new DefaultRestClientFactory(),
-                failureHandler);
+                new DefaultBulkResponseInspector(failureHandler));
     }
 
     private static class UpdatingEmitter implements OpensearchEmitter<Tuple2<Integer, String>> {
