@@ -30,7 +30,6 @@ import org.apache.flink.metrics.groups.OperatorIOMetricGroup;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.metrics.testutils.MetricListener;
 import org.apache.flink.runtime.metrics.MetricNames;
-import org.apache.flink.runtime.metrics.groups.InternalSinkWriterMetricGroup;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.TestLoggerExtension;
@@ -168,17 +167,19 @@ class OpensearchWriterITCase {
         final String index = "test-inc-byte-out";
         final OperatorIOMetricGroup operatorIOMetricGroup =
                 UnregisteredMetricGroups.createUnregisteredOperatorMetricGroup().getIOMetricGroup();
-        final InternalSinkWriterMetricGroup metricGroup =
-                InternalSinkWriterMetricGroup.mock(
-                        metricListener.getMetricGroup(), operatorIOMetricGroup);
         final int flushAfterNActions = 2;
         final BulkProcessorConfig bulkProcessorConfig =
                 new BulkProcessorConfig(flushAfterNActions, -1, -1, FlushBackoffType.NONE, 0, 0);
 
         try (final OpensearchWriter<Tuple2<Integer, String>> writer =
-                createWriter(index, false, bulkProcessorConfig, metricGroup)) {
+                createWriter(
+                        index,
+                        false,
+                        bulkProcessorConfig,
+                        TestingSinkWriterMetricGroup.getSinkWriterMetricGroup(
+                                operatorIOMetricGroup, metricListener.getMetricGroup()))) {
             final Counter numBytesOut = operatorIOMetricGroup.getNumBytesOutCounter();
-            assertThat(numBytesOut.getCount()).isEqualTo(0);
+            assertThat(numBytesOut.getCount()).isZero();
             writer.write(Tuple2.of(1, buildMessage(1)), null);
             writer.write(Tuple2.of(2, buildMessage(2)), null);
 
@@ -280,7 +281,8 @@ class OpensearchWriterITCase {
                 index,
                 flushOnCheckpoint,
                 bulkProcessorConfig,
-                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()),
+                TestingSinkWriterMetricGroup.getSinkWriterMetricGroup(
+                        metricListener.getMetricGroup()),
                 new DefaultFailureHandler());
     }
 
@@ -293,7 +295,8 @@ class OpensearchWriterITCase {
                 index,
                 flushOnCheckpoint,
                 bulkProcessorConfig,
-                InternalSinkWriterMetricGroup.mock(metricListener.getMetricGroup()),
+                TestingSinkWriterMetricGroup.getSinkWriterMetricGroup(
+                        metricListener.getMetricGroup()),
                 failureHandler);
     }
 
