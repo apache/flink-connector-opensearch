@@ -85,7 +85,8 @@ public class OpensearchSinkE2ECase extends SinkTestSuiteBase<ComparableTuple2<In
                                     .toUri()
                                     .toURL()));
 
-    @Override
+    /** Could be removed together with dropping support of Flink 1.19. */
+    @Deprecated
     protected void checkResultWithSemantic(
             ExternalSystemDataReader<ComparableTuple2<Integer, String>> reader,
             List<ComparableTuple2<Integer, String>> testData,
@@ -109,8 +110,46 @@ public class OpensearchSinkE2ECase extends SinkTestSuiteBase<ComparableTuple2<In
                 READER_RETRY_ATTEMPTS);
     }
 
+    protected void checkResultWithSemantic(
+            ExternalSystemDataReader<ComparableTuple2<Integer, String>> reader,
+            List<ComparableTuple2<Integer, String>> testData,
+            org.apache.flink.core.execution.CheckpointingMode semantic)
+            throws Exception {
+        waitUntilCondition(
+                () -> {
+                    try {
+                        List<ComparableTuple2<Integer, String>> result =
+                                reader.poll(Duration.ofMillis(READER_TIMEOUT));
+                        assertThat(sort(result).iterator())
+                                .matchesRecordsFromSource(
+                                        Collections.singletonList(sort(testData)),
+                                        convertFromCheckpointingMode(semantic));
+                        return true;
+                    } catch (Throwable t) {
+                        LOG.warn("Polled results not as expected", t);
+                        return false;
+                    }
+                },
+                5000,
+                READER_RETRY_ATTEMPTS);
+    }
+
     private static <T extends Comparable<T>> List<T> sort(List<T> list) {
         Collections.sort(list);
         return list;
+    }
+
+    /** Could be removed together with dropping support of Flink 1.19. */
+    @Deprecated
+    private static org.apache.flink.streaming.api.CheckpointingMode convertFromCheckpointingMode(
+            org.apache.flink.core.execution.CheckpointingMode semantic) {
+        switch (semantic) {
+            case EXACTLY_ONCE:
+                return org.apache.flink.streaming.api.CheckpointingMode.EXACTLY_ONCE;
+            case AT_LEAST_ONCE:
+                return org.apache.flink.streaming.api.CheckpointingMode.AT_LEAST_ONCE;
+            default:
+                throw new IllegalArgumentException("Unsupported semantic: " + semantic);
+        }
     }
 }
