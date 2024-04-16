@@ -22,6 +22,6 @@ package org.apache.flink.connector.opensearch.test;
  * integration tests.
  */
 public class DockerImageVersions {
-    public static final String OPENSEARCH_1 = "opensearchproject/opensearch:1.3.14";
-    public static final String OPENSEARCH_2 = "opensearchproject/opensearch:2.11.1";
+    public static final String OPENSEARCH_1 = "opensearchproject/opensearch:1.3.15";
+    public static final String OPENSEARCH_2 = "opensearchproject/opensearch:2.13.0";
 }

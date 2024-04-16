@@ -36,7 +36,7 @@ under the License.
 
 	<!-- Allow users to pass custom connector versions -->
 	<properties>
-		<opensearch.version>2.11.1</opensearch.version>
+		<opensearch.version>2.13.0</opensearch.version>
 		<flink.connector.module.config><!-- required by
 		OpensearchSinkITCase -->  --add-opens=java.base/java.lang=ALL-UNNAMED <!--
 		OpensearchSinkITCase --> --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED <!--
