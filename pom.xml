@@ -28,7 +28,7 @@ under the License.
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>flink-connector-opensearch-parent</artifactId>
-	<version>${revision}</version>
+	<version>2.0-SNAPSHOT</version>
 	<name>Flink : Connectors : Opensearch : Parent</name>
 	<packaging>pom</packaging>
 	<url>https://flink.apache.org</url>
@@ -55,8 +55,6 @@ under the License.
 	</modules>
 
 	<properties>
-		<flink.connector.opensearch.parent.revision>1.2-SNAPSHOT</flink.connector.opensearch.parent.revision>
-		<revision>${flink.connector.opensearch.parent.revision}</revision>
 		<flink.version>1.18.0</flink.version>
 		<commons-compress.version>1.26.1</commons-compress.version>
 		<jackson-bom.version>2.16.2</jackson-bom.version>
