@@ -22,7 +22,7 @@ under the License.
 	<parent>
 		<groupId>org.apache.flink</groupId>
 		<artifactId>flink-connector-parent</artifactId>
-		<version>1.0.0</version>
+		<version>1.1.0</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -55,7 +55,7 @@ under the License.
 	</modules>
 
 	<properties>
-		<flink.version>1.18.0</flink.version>
+		<flink.version>1.20.0</flink.version>
 		<commons-compress.version>1.26.1</commons-compress.version>
 		<jackson-bom.version>2.16.2</jackson-bom.version>
 		<junit5.version>5.10.2</junit5.version>
@@ -64,7 +64,7 @@ under the License.
 		<mockito.version>3.12.4</mockito.version>
 
 		<japicmp.skip>false</japicmp.skip>
-		<japicmp.referenceVersion>1.0.0-1.16</japicmp.referenceVersion>
+		<japicmp.referenceVersion>1.0.0-1.19</japicmp.referenceVersion>
 
 		<slf4j.version>1.7.36</slf4j.version>
 		<log4j.version>2.17.2</log4j.version>
@@ -373,15 +373,8 @@ under the License.
 			<dependency>
 				<!-- mockito/powermock mismatch -->
 				<groupId>net.bytebuddy</groupId>
-				<artifactId>byte-buddy</artifactId>
-				<version>1.14.10</version>
-			</dependency>
-
-			<dependency>
-				<!-- mockito/powermock mismatch -->
-				<groupId>net.bytebuddy</groupId>
 				<artifactId>byte-buddy-agent</artifactId>
-				<version>1.14.10</version>
+				<version>1.14.13</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -408,6 +401,24 @@ under the License.
 				<module>flink-connector-opensearch2-e2e-tests</module>
 				<module>flink-sql-connector-opensearch2</module>
 			</modules>
+		</profile>
+		<!-- The spotless comes from flink-connector-parent and needs version bump to support JDK-21 -->
+		<profile>
+			<id>spotless</id>
+			<activation>
+				<jdk>[21,)</jdk>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.diffplug.spotless</groupId>
+						<artifactId>spotless-maven-plugin</artifactId>
+						<configuration>
+							<skip>true</skip>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 

@@ -37,7 +37,12 @@ jobs:
           jdk: '8, 11, 17, 21',
           branch: main
         }, {
-          flink: 1.20-SNAPSHOT,
+            flink: 1.20-SNAPSHOT,
+            jdk: '8, 11, 17, 21',
+            branch: main
+          }, 
+        {
+          flink: 1.20,
           jdk: '8, 11, 17, 21',
           branch: main
         }, {
