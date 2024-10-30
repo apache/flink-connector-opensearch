@@ -17,17 +17,15 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
-import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.Sink.InitContext;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.opensearch.sink.BulkResponseInspector.BulkResponseInspectorFactory;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
+import org.apache.flink.runtime.mailbox.SyncMailboxExecutor;
 import org.apache.flink.streaming.runtime.tasks.TestProcessingTimeService;
-import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.SimpleUserCodeClassLoader;
 import org.apache.flink.util.TestLoggerExtension;
-import org.apache.flink.util.function.ThrowingRunnable;
 
 import org.apache.http.HttpHost;
 import org.junit.jupiter.api.DynamicTest;
@@ -163,8 +161,7 @@ class OpensearchSinkBuilderTest {
                         TestingSinkWriterMetricGroup.getSinkWriterMetricGroup(
                                 new UnregisteredMetricsGroup()));
 
-        Mockito.when(sinkInitContext.getMailboxExecutor())
-                .thenReturn(new OpensearchSinkBuilderTest.DummyMailboxExecutor());
+        Mockito.when(sinkInitContext.getMailboxExecutor()).thenReturn(new SyncMailboxExecutor());
         Mockito.when(sinkInitContext.getProcessingTimeService())
                 .thenReturn(new TestProcessingTimeService());
         Mockito.when(sinkInitContext.getUserCodeClassLoader())
@@ -174,21 +171,6 @@ class OpensearchSinkBuilderTest {
 
         assertThatCode(() -> sink.createWriter(sinkInitContext)).doesNotThrowAnyException();
         assertThat(called).isTrue();
-    }
-
-    private static class DummyMailboxExecutor implements MailboxExecutor {
-        private DummyMailboxExecutor() {}
-
-        public void execute(
-                ThrowingRunnable<? extends Exception> command,
-                String descriptionFormat,
-                Object... descriptionArgs) {}
-
-        public void yield() throws InterruptedException, FlinkRuntimeException {}
-
-        public boolean tryYield() throws FlinkRuntimeException {
-            return false;
-        }
     }
 
     private OpensearchSinkBuilder<Object> createEmptyBuilder() {
