@@ -28,7 +28,7 @@ under the License.
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>flink-connector-opensearch-parent</artifactId>
-	<version>2.0-SNAPSHOT</version>
+	<version>3.0-SNAPSHOT</version>
 	<name>Flink : Connectors : Opensearch : Parent</name>
 	<packaging>pom</packaging>
 	<url>https://flink.apache.org</url>
@@ -52,10 +52,13 @@ under the License.
 
 	<modules>
 		<module>flink-connector-opensearch-base</module>
+		<module>flink-connector-opensearch2</module>
+		<module>flink-connector-opensearch2-e2e-tests</module>
+		<module>flink-sql-connector-opensearch2</module>
 	</modules>
 
 	<properties>
-		<flink.version>1.20.0</flink.version>
+		<flink.version>2.0.0</flink.version>
 		<commons-compress.version>1.26.1</commons-compress.version>
 		<jackson-bom.version>2.16.2</jackson-bom.version>
 		<junit5.version>5.10.2</junit5.version>
@@ -64,7 +67,7 @@ under the License.
 		<mockito.version>3.12.4</mockito.version>
 
 		<japicmp.skip>false</japicmp.skip>
-		<japicmp.referenceVersion>1.0.0-1.19</japicmp.referenceVersion>
+		<japicmp.referenceVersion>1.0.0-1.20</japicmp.referenceVersion>
 
 		<slf4j.version>1.7.36</slf4j.version>
 		<log4j.version>2.17.2</log4j.version>
@@ -380,28 +383,6 @@ under the License.
 	</dependencyManagement>
 
 	<profiles>
-		<profile>
-			<id>opensearch1</id>
-			<activation>
-				<jdk>[1.8,)</jdk>
-			</activation>
-			<modules>
-				<module>flink-connector-opensearch</module>
-				<module>flink-connector-opensearch-e2e-tests</module>
-				<module>flink-sql-connector-opensearch</module>
-			</modules>
-		</profile>
-		<profile>
-			<id>opensearch2</id>
-			<activation>
-				<jdk>[11,)</jdk>
-			</activation>
-			<modules>
-				<module>flink-connector-opensearch2</module>
-				<module>flink-connector-opensearch2-e2e-tests</module>
-				<module>flink-sql-connector-opensearch2</module>
-			</modules>
-		</profile>
 		<!-- The spotless comes from flink-connector-parent and needs version bump to support JDK-21 -->
 		<profile>
 			<id>spotless</id>
