@@ -18,9 +18,11 @@
 package org.apache.flink.connector.opensearch.sink;
 
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.common.state.CheckpointListener;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.RestartStrategyOptions;
+import org.apache.flink.configuration.RestartStrategyOptions.RestartStrategyType;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.opensearch.OpensearchUtil;
 import org.apache.flink.connector.opensearch.test.DockerImageVersions;
@@ -146,11 +148,14 @@ class Opensearch2SinkITCase {
                         .setAllowInsecure(true)
                         .build();
 
-        final StreamExecutionEnvironment env = new LocalStreamEnvironment();
-        env.enableCheckpointing(100L);
+        final Configuration configuration = new Configuration();
         if (!allowRestarts) {
-            env.setRestartStrategy(RestartStrategies.noRestart());
+            configuration.set(
+                    RestartStrategyOptions.RESTART_STRATEGY,
+                    RestartStrategyType.NO_RESTART_STRATEGY.getMainValue());
         }
+        final StreamExecutionEnvironment env = new LocalStreamEnvironment(configuration);
+        env.enableCheckpointing(100L);
         DataStream<Long> stream = env.fromSequence(1, 5);
 
         if (additionalMapper != null) {

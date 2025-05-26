@@ -6,10 +6,10 @@ The Apache Software Foundation (http://www.apache.org/).
 
 This project bundles the following dependencies under the Apache Software License 2.0. (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-- com.fasterxml.jackson.core:jackson-core:2.16.2
-- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.16.2
-- com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.16.2
-- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.16.2
+- com.fasterxml.jackson.core:jackson-core:2.18.2
+- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2
+- com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.18.2
+- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.2
 - com.github.spullara.mustache.java:compiler:0.9.10
 - commons-codec:commons-codec:1.15
 - commons-logging:commons-logging:1.2

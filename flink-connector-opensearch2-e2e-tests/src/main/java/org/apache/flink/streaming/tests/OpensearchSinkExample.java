@@ -18,25 +18,21 @@
 package org.apache.flink.streaming.tests;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.connector.opensearch.sink.FailureHandler;
+import org.apache.flink.connector.opensearch.sink.Opensearch2SinkBuilder;
+import org.apache.flink.connector.opensearch.sink.OpensearchEmitter;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.opensearch.ActionRequestFailureHandler;
-import org.apache.flink.streaming.connectors.opensearch.Opensearch2Sink;
-import org.apache.flink.streaming.connectors.opensearch.RequestIndexer;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.ParameterTool;
 
 import org.apache.http.HttpHost;
-import org.opensearch.action.ActionRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
 import org.opensearch.client.Requests;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /** End to end test for OpensearchSink. */
@@ -69,31 +65,29 @@ public class OpensearchSinkExample {
                                     }
                                 });
 
-        List<HttpHost> httpHosts = new ArrayList<>();
-        httpHosts.add(new HttpHost("127.0.0.1", 9200, "http"));
+        Opensearch2SinkBuilder<Tuple2<String, String>> osSinkBuilder =
+                new Opensearch2SinkBuilder<>()
+                        .setHosts(new HttpHost("127.0.0.1", 9200, "http"))
+                        .setEmitter(
+                                (OpensearchEmitter<Tuple2<String, String>>)
+                                        (element, writer, indexer) -> {
+                                            indexer.add(
+                                                    createIndexRequest(element.f1, parameterTool));
+                                            indexer.add(
+                                                    createUpdateRequest(element, parameterTool));
+                                        })
+                        .setFailureHandler(
+                                new CustomFailureHandler(parameterTool.getRequired("index")))
+                        // this instructs the sink to emit after every element, otherwise they would
+                        // be buffered
+                        .setBulkFlushMaxActions(1);
 
-        Opensearch2Sink.Builder<Tuple2<String, String>> osSinkBuilder =
-                new Opensearch2Sink.Builder<>(
-                        httpHosts,
-                        (Tuple2<String, String> element,
-                                RuntimeContext ctx,
-                                RequestIndexer indexer) -> {
-                            indexer.add(createIndexRequest(element.f1, parameterTool));
-                            indexer.add(createUpdateRequest(element, parameterTool));
-                        });
-
-        osSinkBuilder.setFailureHandler(
-                new CustomFailureHandler(parameterTool.getRequired("index")));
-
-        // this instructs the sink to emit after every element, otherwise they would be buffered
-        osSinkBuilder.setBulkFlushMaxActions(1);
-
-        source.addSink(osSinkBuilder.build());
+        source.sinkTo(osSinkBuilder.build());
 
         env.execute("Opensearch end to end sink test example");
     }
 
-    private static class CustomFailureHandler implements ActionRequestFailureHandler {
+    private static class CustomFailureHandler implements FailureHandler {
 
         private static final long serialVersionUID = 942269087742453482L;
 
@@ -104,21 +98,8 @@ public class OpensearchSinkExample {
         }
 
         @Override
-        public void onFailure(
-                ActionRequest action, Throwable failure, int restStatusCode, RequestIndexer indexer)
-                throws Throwable {
-            if (action instanceof IndexRequest) {
-                Map<String, Object> json = new HashMap<>();
-                json.put("data", ((IndexRequest) action).source());
-
-                indexer.add(
-                        Requests.indexRequest()
-                                .index(index)
-                                .id(((IndexRequest) action).id())
-                                .source(json));
-            } else {
-                throw new IllegalStateException("unexpected");
-            }
+        public void onFailure(Throwable failure) {
+            throw new IllegalStateException("Unexpected exception for index:" + index);
         }
     }
 
