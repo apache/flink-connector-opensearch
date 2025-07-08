@@ -53,13 +53,12 @@ class TestContext {
         return new FactoryUtil.DefaultDynamicTableContext(
                 ObjectIdentifier.of("default", "default", "t1"),
                 new ResolvedCatalogTable(
-                        CatalogTable
-                            .newBuilder()
-                            .schema(Schema.newBuilder().fromResolvedSchema(schema).build())
-                            .comment("mock context")
-                            .partitionKeys(Collections.emptyList())
-                            .options(options)
-                            .build(),
+                        CatalogTable.newBuilder()
+                                .schema(Schema.newBuilder().fromResolvedSchema(schema).build())
+                                .comment("mock context")
+                                .partitionKeys(Collections.emptyList())
+                                .options(options)
+                                .build(),
                         schema),
                 Collections.emptyMap(),
                 new Configuration(),

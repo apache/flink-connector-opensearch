@@ -26,6 +26,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.ParameterTool;
+
 import org.apache.http.HttpHost;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.update.UpdateRequest;
@@ -65,15 +66,21 @@ public class OpensearchSinkExample {
                                 });
 
         OpensearchSinkBuilder<Tuple2<String, String>> osSinkBuilder =
-            new OpensearchSinkBuilder<>()
-                .setHosts(new HttpHost("127.0.0.1", 9200, "http"))
-                .setEmitter((OpensearchEmitter<Tuple2<String, String>>) (element, writer, indexer) -> {
-                            indexer.add(createIndexRequest(element.f1, parameterTool));
-                            indexer.add(createUpdateRequest(element, parameterTool));
-                        })
-                .setFailureHandler(new CustomFailureHandler(parameterTool.getRequired("index")))
-                // this instructs the sink to emit after every element, otherwise they would be buffered
-                .setBulkFlushMaxActions(1);
+                new OpensearchSinkBuilder<>()
+                        .setHosts(new HttpHost("127.0.0.1", 9200, "http"))
+                        .setEmitter(
+                                (OpensearchEmitter<Tuple2<String, String>>)
+                                        (element, writer, indexer) -> {
+                                            indexer.add(
+                                                    createIndexRequest(element.f1, parameterTool));
+                                            indexer.add(
+                                                    createUpdateRequest(element, parameterTool));
+                                        })
+                        .setFailureHandler(
+                                new CustomFailureHandler(parameterTool.getRequired("index")))
+                        // this instructs the sink to emit after every element, otherwise they would
+                        // be buffered
+                        .setBulkFlushMaxActions(1);
 
         source.sinkTo(osSinkBuilder.build());
         env.execute("Opensearch end to end sink test example");
