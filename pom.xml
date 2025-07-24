@@ -52,9 +52,6 @@ under the License.
 
 	<modules>
 		<module>flink-connector-opensearch-base</module>
-		<module>flink-connector-opensearch2</module>
-		<module>flink-connector-opensearch2-e2e-tests</module>
-		<module>flink-sql-connector-opensearch2</module>
 	</modules>
 
 	<properties>
@@ -383,6 +380,28 @@ under the License.
 	</dependencyManagement>
 
 	<profiles>
+		<profile>
+			<id>opensearch1</id>
+			<activation>
+				<jdk>[1.8,)</jdk>
+			</activation>
+			<modules>
+				<module>flink-connector-opensearch</module>
+				<module>flink-connector-opensearch-e2e-tests</module>
+				<module>flink-sql-connector-opensearch</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>opensearch2</id>
+			<activation>
+				<jdk>[11,)</jdk>
+			</activation>
+			<modules>
+				<module>flink-connector-opensearch2</module>
+				<module>flink-connector-opensearch2-e2e-tests</module>
+				<module>flink-sql-connector-opensearch2</module>
+			</modules>
+		</profile>
 		<!-- The spotless comes from flink-connector-parent and needs version bump to support JDK-21 -->
 		<!-- Remove this profile once we drop the support of 1.x release line -->
 		<profile>

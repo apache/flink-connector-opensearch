@@ -17,7 +17,7 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
-import org.apache.flink.api.connector.sink2.Sink.InitContext;
+import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.opensearch.sink.BulkResponseInspector.BulkResponseInspectorFactory;
 import org.apache.flink.metrics.MetricGroup;
@@ -155,7 +155,7 @@ class OpensearchSinkBuilderTest {
                         .setBulkResponseInspectorFactory(bulkResponseInspectorFactory)
                         .build();
 
-        final InitContext sinkInitContext = Mockito.mock(InitContext.class);
+        final WriterInitContext sinkInitContext = Mockito.mock(WriterInitContext.class);
         Mockito.when(sinkInitContext.metricGroup())
                 .thenReturn(
                         TestingSinkWriterMetricGroup.getSinkWriterMetricGroup(
