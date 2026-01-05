@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Factory of {@link IndexGenerator}.
@@ -71,12 +72,10 @@ final class IndexGeneratorFactory {
             ZoneId localTimeZoneId) {
         final IndexHelper indexHelper = new IndexHelper();
         if (indexHelper.checkIsDynamicIndex(index)) {
+            List<LogicalType> logicalTypes =
+                    dataTypes.stream().map(DataType::getLogicalType).collect(Collectors.toList());
             return createRuntimeIndexGenerator(
-                    index,
-                    fieldNames.toArray(new String[0]),
-                    dataTypes.toArray(new DataType[0]),
-                    indexHelper,
-                    localTimeZoneId);
+                    index, fieldNames, logicalTypes, indexHelper, localTimeZoneId);
         } else {
             return new StaticIndexGenerator(index);
         }
@@ -93,8 +92,8 @@ final class IndexGeneratorFactory {
 
     private static IndexGenerator createRuntimeIndexGenerator(
             String index,
-            String[] fieldNames,
-            DataType[] fieldTypes,
+            List<String> fieldNames,
+            List<LogicalType> fieldTypes,
             IndexHelper indexHelper,
             ZoneId localTimeZoneId) {
         final String dynamicIndexPatternStr = indexHelper.extractDynamicIndexPatternStr(index);
@@ -118,8 +117,9 @@ final class IndexGeneratorFactory {
 
         final boolean isDynamicIndexWithFormat = indexHelper.checkIsDynamicIndexWithFormat(index);
         final int indexFieldPos =
-                indexHelper.extractIndexFieldPos(index, fieldNames, isDynamicIndexWithFormat);
-        final LogicalType indexFieldType = fieldTypes[indexFieldPos].getLogicalType();
+                indexHelper.extractIndexFieldPos(
+                        index, fieldNames.toArray(new String[0]), isDynamicIndexWithFormat);
+        final LogicalType indexFieldType = fieldTypes.get(indexFieldPos);
         final LogicalTypeRoot indexFieldLogicalTypeRoot = indexFieldType.getTypeRoot();
 
         // validate index field type
