@@ -36,7 +36,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,8 +116,7 @@ final class IndexGeneratorFactory {
 
         final boolean isDynamicIndexWithFormat = indexHelper.checkIsDynamicIndexWithFormat(index);
         final int indexFieldPos =
-                indexHelper.extractIndexFieldPos(
-                        index, fieldNames.toArray(new String[0]), isDynamicIndexWithFormat);
+                indexHelper.extractIndexFieldPos(index, fieldNames, isDynamicIndexWithFormat);
         final LogicalType indexFieldType = fieldTypes.get(indexFieldPos);
         final LogicalTypeRoot indexFieldLogicalTypeRoot = indexFieldType.getTypeRoot();
 
@@ -286,21 +284,20 @@ final class IndexGeneratorFactory {
 
         /** Extract index field position in a fieldNames, return the field position. */
         int extractIndexFieldPos(
-                String index, String[] fieldNames, boolean isDynamicIndexWithFormat) {
-            List<String> fieldList = Arrays.asList(fieldNames);
+                String index, List<String> fieldNames, boolean isDynamicIndexWithFormat) {
             String indexFieldName;
             if (isDynamicIndexWithFormat) {
                 indexFieldName = index.substring(index.indexOf("{") + 1, index.indexOf("|"));
             } else {
                 indexFieldName = index.substring(index.indexOf("{") + 1, index.indexOf("}"));
             }
-            if (!fieldList.contains(indexFieldName)) {
+            if (!fieldNames.contains(indexFieldName)) {
                 throw new TableException(
                         String.format(
                                 "Unknown field '%s' in index pattern '%s', please check the field name.",
                                 indexFieldName, index));
             }
-            return fieldList.indexOf(indexFieldName);
+            return fieldNames.indexOf(indexFieldName);
         }
 
         /** Extract dateTime format by the date format that extracted from index pattern string. */
