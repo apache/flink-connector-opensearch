@@ -59,7 +59,7 @@ under the License.
 		<commons-compress.version>1.26.1</commons-compress.version>
 		<jackson-bom.version>2.18.2</jackson-bom.version>
 		<junit5.version>5.11.4</junit5.version>
-		<assertj.version>3.25.3</assertj.version>
+		<assertj.version>3.27.7</assertj.version>
 		<testcontainers.version>1.19.7</testcontainers.version>
 		<mockito.version>5.14.2</mockito.version>
 
