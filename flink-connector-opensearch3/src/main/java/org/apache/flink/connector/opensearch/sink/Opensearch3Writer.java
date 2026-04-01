@@ -127,8 +127,8 @@ class Opensearch3Writer<IN> implements SinkWriter<IN> {
         if (bulkProcessorConfig.getBulkFlushMaxActions() > 0) {
             ingesterBuilder.maxOperations(bulkProcessorConfig.getBulkFlushMaxActions());
         }
-        if (bulkProcessorConfig.getBulkFlushMaxMb() > 0) {
-            ingesterBuilder.maxSize(bulkProcessorConfig.getBulkFlushMaxMb() * 1024L * 1024L);
+        if (bulkProcessorConfig.getBulkFlushMaxBytes() > 0) {
+            ingesterBuilder.maxSize(bulkProcessorConfig.getBulkFlushMaxBytes());
         }
         if (bulkProcessorConfig.getBulkFlushInterval() > 0) {
             ingesterBuilder.flushInterval(

@@ -19,6 +19,7 @@
 package org.apache.flink.connector.opensearch.sink;
 
 import org.apache.flink.annotation.PublicEvolving;
+import org.apache.flink.configuration.MemorySize;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.opensearch.sink.Opensearch3Writer.DefaultFailureHandler;
 import org.apache.flink.connector.opensearch.sink.Opensearch3Writer.Opensearch3FailureHandler;
@@ -58,7 +59,7 @@ import static org.apache.flink.util.Preconditions.checkState;
 public class Opensearch3SinkBuilder<IN> {
 
     private int bulkFlushMaxActions = 1000;
-    private int bulkFlushMaxMb = -1;
+    private long bulkFlushMaxBytes = -1;
     private long bulkFlushInterval = -1;
     private FlushBackoffType bulkFlushBackoffType = FlushBackoffType.NONE;
     private int bulkFlushBackoffRetries = -1;
@@ -147,17 +148,17 @@ public class Opensearch3SinkBuilder<IN> {
     }
 
     /**
-     * Sets the maximum size of buffered actions, in mb, per bulk request. You can pass -1 to
-     * disable it.
+     * Sets the maximum size of buffered bulk payload per request. Use {@link MemorySize#ZERO} to
+     * disable the size limit (default when this method is not called).
      *
-     * @param maxSizeMb the maximum size of buffered actions, in mb.
+     * @param maxBufferedSize maximum buffered size per bulk request
      * @return this builder
      */
-    public Opensearch3SinkBuilder<IN> setBulkFlushMaxSizeMb(int maxSizeMb) {
-        checkState(
-                maxSizeMb == -1 || maxSizeMb > 0,
-                "Max size of buffered actions must be larger than 0.");
-        this.bulkFlushMaxMb = maxSizeMb;
+    public Opensearch3SinkBuilder<IN> setBulkFlushMaxSize(MemorySize maxBufferedSize) {
+        checkNotNull(maxBufferedSize);
+        long bytes = maxBufferedSize.getBytes();
+        checkArgument(bytes >= 0, "Max buffer size must not be negative.");
+        this.bulkFlushMaxBytes = bytes == 0 ? -1 : bytes;
         return self();
     }
 
@@ -349,7 +350,7 @@ public class Opensearch3SinkBuilder<IN> {
     private BulkProcessorConfig buildBulkProcessorConfig() {
         return new BulkProcessorConfig(
                 bulkFlushMaxActions,
-                bulkFlushMaxMb,
+                bulkFlushMaxBytes,
                 bulkFlushInterval,
                 bulkFlushBackoffType,
                 bulkFlushBackoffRetries,
@@ -361,8 +362,8 @@ public class Opensearch3SinkBuilder<IN> {
         return "Opensearch3SinkBuilder{"
                 + "bulkFlushMaxActions="
                 + bulkFlushMaxActions
-                + ", bulkFlushMaxMb="
-                + bulkFlushMaxMb
+                + ", bulkFlushMaxBytes="
+                + bulkFlushMaxBytes
                 + ", bulkFlushInterval="
                 + bulkFlushInterval
                 + ", bulkFlushBackoffType="

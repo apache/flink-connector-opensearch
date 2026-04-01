@@ -128,7 +128,7 @@ class Opensearch3DynamicSink implements DynamicTableSink {
                         .toArray(HttpHost[]::new));
         builder.setDeliveryGuarantee(config.getDeliveryGuarantee());
         builder.setBulkFlushMaxActions(config.getBulkFlushMaxActions());
-        builder.setBulkFlushMaxSizeMb(config.getBulkFlushMaxByteSize().getMebiBytes());
+        builder.setBulkFlushMaxSize(config.getBulkFlushMaxByteSize());
         builder.setBulkFlushInterval(config.getBulkFlushInterval());
 
         if (config.getBulkFlushBackoffType().isPresent()) {

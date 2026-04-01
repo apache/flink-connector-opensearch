@@ -28,7 +28,8 @@ class BulkProcessorConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final int bulkFlushMaxActions;
-    private final int bulkFlushMaxMb;
+    /** -1 if bulk flush max size is disabled; otherwise max buffered bulk payload in bytes. */
+    private final long bulkFlushMaxBytes;
     private final long bulkFlushInterval;
     private final FlushBackoffType flushBackoffType;
     private final int bulkFlushBackoffRetries;
@@ -36,13 +37,13 @@ class BulkProcessorConfig implements Serializable {
 
     BulkProcessorConfig(
             int bulkFlushMaxActions,
-            int bulkFlushMaxMb,
+            long bulkFlushMaxBytes,
             long bulkFlushInterval,
             FlushBackoffType flushBackoffType,
             int bulkFlushBackoffRetries,
             long bulkFlushBackOffDelay) {
         this.bulkFlushMaxActions = bulkFlushMaxActions;
-        this.bulkFlushMaxMb = bulkFlushMaxMb;
+        this.bulkFlushMaxBytes = bulkFlushMaxBytes;
         this.bulkFlushInterval = bulkFlushInterval;
         this.flushBackoffType = checkNotNull(flushBackoffType);
         this.bulkFlushBackoffRetries = bulkFlushBackoffRetries;
@@ -53,8 +54,8 @@ class BulkProcessorConfig implements Serializable {
         return bulkFlushMaxActions;
     }
 
-    public int getBulkFlushMaxMb() {
-        return bulkFlushMaxMb;
+    public long getBulkFlushMaxBytes() {
+        return bulkFlushMaxBytes;
     }
 
     public long getBulkFlushInterval() {
