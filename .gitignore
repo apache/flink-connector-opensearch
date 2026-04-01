@@ -12,6 +12,8 @@ filter.properties
 logs.zip
 .mvn/wrapper/*.jar
 target
+# Maven Shade plugin (regenerated on each build)
+dependency-reduced-pom.xml
 tmp
 *.class
 *.iml
