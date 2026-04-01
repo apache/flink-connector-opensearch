@@ -23,6 +23,7 @@ import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.opensearch.sink.Opensearch3Writer.DefaultFailureHandler;
 import org.apache.flink.connector.opensearch.sink.Opensearch3Writer.Opensearch3FailureHandler;
 import org.apache.flink.util.InstantiationUtil;
+import org.apache.flink.util.StringUtils;
 
 import org.apache.hc.core5.http.HttpHost;
 
@@ -214,6 +215,9 @@ public class Opensearch3SinkBuilder<IN> {
      */
     public Opensearch3SinkBuilder<IN> setConnectionUsername(String username) {
         checkNotNull(username);
+        checkArgument(
+                !StringUtils.isNullOrWhitespaceOnly(username),
+                "Username must not be empty or whitespace-only.");
         this.username = username;
         return self();
     }
@@ -226,6 +230,9 @@ public class Opensearch3SinkBuilder<IN> {
      */
     public Opensearch3SinkBuilder<IN> setConnectionPassword(String password) {
         checkNotNull(password);
+        checkArgument(
+                !StringUtils.isNullOrWhitespaceOnly(password),
+                "Password must not be empty or whitespace-only.");
         this.password = password;
         return self();
     }
