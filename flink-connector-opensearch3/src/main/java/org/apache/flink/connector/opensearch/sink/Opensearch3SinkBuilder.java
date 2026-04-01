@@ -108,6 +108,9 @@ public class Opensearch3SinkBuilder<IN> {
     public Opensearch3SinkBuilder<IN> setHosts(HttpHost... hosts) {
         checkNotNull(hosts);
         checkState(hosts.length > 0, "Hosts cannot be empty.");
+        for (HttpHost host : hosts) {
+            checkNotNull(host, "Hosts cannot contain null elements.");
+        }
         this.hosts = Arrays.asList(hosts);
         return self();
     }
