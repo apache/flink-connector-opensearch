@@ -38,6 +38,7 @@ import org.opensearch.testcontainers.OpensearchContainer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -48,6 +49,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class Opensearch3TestClient implements Closeable {
 
     private static final String DATA_FIELD_NAME = "data";
+
+    /** Poll interval while waiting for bulk-indexed documents to become visible (matches Opensearch2TestClient). */
+    private static final long INDEX_VISIBILITY_POLL_INTERVAL_MS = 10L;
+
+    private static final long INDEX_VISIBILITY_TIMEOUT_MS = 60_000L;
 
     private final OpenSearchClient client;
     private final OpenSearchTransport transport;
@@ -102,17 +108,37 @@ public class Opensearch3TestClient implements Closeable {
     }
 
     public void assertThatIdsAreWritten(String index, Integer... ids) throws Exception {
-        // Wait for documents to be indexed
-        Thread.sleep(2000);
+        final long deadline = System.currentTimeMillis() + INDEX_VISIBILITY_TIMEOUT_MS;
+        List<String> retrievedIds = List.of();
 
-        // Refresh the index
-        client.indices().refresh(r -> r.index(index));
+        while (true) {
+            client.indices().refresh(r -> r.index(index));
+            SearchRequest searchRequest =
+                    new SearchRequest.Builder().index(index).size(100).build();
+            SearchResponse<Map> response = client.search(searchRequest, Map.class);
+            retrievedIds =
+                    response.hits().hits().stream().map(Hit::id).collect(Collectors.toList());
 
-        SearchRequest searchRequest = new SearchRequest.Builder().index(index).size(100).build();
-
-        SearchResponse<Map> response = client.search(searchRequest, Map.class);
-        List<String> retrievedIds =
-                response.hits().hits().stream().map(Hit::id).collect(Collectors.toList());
+            boolean allPresent = true;
+            for (Integer id : ids) {
+                if (!retrievedIds.contains(id.toString())) {
+                    allPresent = false;
+                    break;
+                }
+            }
+            if (allPresent) {
+                break;
+            }
+            if (System.currentTimeMillis() >= deadline) {
+                assertThat(retrievedIds)
+                        .as(
+                                "Timeout waiting for documents in index=%s; expected ids=%s",
+                                index, Arrays.toString(ids))
+                        .containsAll(
+                                Arrays.stream(ids).map(String::valueOf).collect(Collectors.toList()));
+            }
+            Thread.sleep(INDEX_VISIBILITY_POLL_INTERVAL_MS);
+        }
 
         for (Integer id : ids) {
             assertThat(retrievedIds).contains(id.toString());
