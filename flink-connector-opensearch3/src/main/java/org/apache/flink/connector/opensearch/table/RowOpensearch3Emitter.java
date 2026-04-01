@@ -41,10 +41,11 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 /** Sink emitter for converting upserts into OpenSearch 3.x bulk operations. */
 class RowOpensearch3Emitter implements Opensearch3Emitter<RowData> {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final IndexGenerator indexGenerator;
     private final SerializationSchema<RowData> serializationSchema;
     private final Function<RowData, String> createKey;
-    private transient ObjectMapper objectMapper;
 
     public RowOpensearch3Emitter(
             IndexGenerator indexGenerator,
@@ -75,7 +76,6 @@ class RowOpensearch3Emitter implements Opensearch3Emitter<RowData> {
             throw new FlinkRuntimeException("Failed to initialize serialization schema.", e);
         }
         indexGenerator.open();
-        objectMapper = new ObjectMapper();
     }
 
     @Override
@@ -119,7 +119,7 @@ class RowOpensearch3Emitter implements Opensearch3Emitter<RowData> {
     @SuppressWarnings("unchecked")
     private Map<String, Object> parseDocument(byte[] document) {
         try {
-            return objectMapper.readValue(document, HashMap.class);
+            return OBJECT_MAPPER.readValue(document, HashMap.class);
         } catch (Exception e) {
             throw new FlinkRuntimeException("Failed to parse document as JSON", e);
         }
