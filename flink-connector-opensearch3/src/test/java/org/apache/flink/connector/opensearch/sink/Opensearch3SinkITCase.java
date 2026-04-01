@@ -155,7 +155,9 @@ class Opensearch3SinkITCase {
                     RestartStrategyType.NO_RESTART_STRATEGY.getMainValue());
         }
         final StreamExecutionEnvironment env = new LocalStreamEnvironment(configuration);
-        env.enableCheckpointing(100L);
+        // Recovery test: shorter interval so a checkpoint can complete while fromSequence(1,5) is
+        // still running (FailingMapper fails from notifyCheckpointComplete).
+        env.enableCheckpointing(additionalMapper != null ? 20L : 100L);
         // Increase checkpoint timeout for slower container environments (e.g., Podman)
         env.getCheckpointConfig().setCheckpointTimeout(300_000L); // 5 minutes
         DataStream<Long> stream = env.fromSequence(1, 5);
@@ -189,7 +191,6 @@ class Opensearch3SinkITCase {
 
         @Override
         public Long map(Long value) throws Exception {
-            Thread.sleep(50);
             emittedRecords++;
             return value;
         }
