@@ -36,7 +36,7 @@ under the License.
 
 	<!-- Allow users to pass custom connector versions -->
 	<properties>
-		<opensearch-java.version>3.5.0</opensearch-java.version>
+		<opensearch-java.version>3.8.0</opensearch-java.version>
 		<httpclient5.version>5.3.1</httpclient5.version>
 		<httpcore5.version>5.3.1</httpcore5.version>
 		<flink.connector.module.config><!-- required by
