@@ -30,6 +30,7 @@ class BulkProcessorConfig implements Serializable {
     private final int bulkFlushMaxActions;
     /** -1 if bulk flush max size is disabled; otherwise max buffered bulk payload in bytes. */
     private final long bulkFlushMaxBytes;
+
     private final long bulkFlushInterval;
     private final FlushBackoffType flushBackoffType;
     private final int bulkFlushBackoffRetries;

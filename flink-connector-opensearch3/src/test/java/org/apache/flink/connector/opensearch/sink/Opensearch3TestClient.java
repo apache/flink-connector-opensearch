@@ -50,7 +50,10 @@ public class Opensearch3TestClient implements Closeable {
 
     private static final String DATA_FIELD_NAME = "data";
 
-    /** Poll interval while waiting for bulk-indexed documents to become visible (matches Opensearch2TestClient). */
+    /**
+     * Poll interval while waiting for bulk-indexed documents to become visible (matches
+     * Opensearch2TestClient).
+     */
     private static final long INDEX_VISIBILITY_POLL_INTERVAL_MS = 10L;
 
     private static final long INDEX_VISIBILITY_TIMEOUT_MS = 60_000L;
@@ -135,7 +138,9 @@ public class Opensearch3TestClient implements Closeable {
                                 "Timeout waiting for documents in index=%s; expected ids=%s",
                                 index, Arrays.toString(ids))
                         .containsAll(
-                                Arrays.stream(ids).map(String::valueOf).collect(Collectors.toList()));
+                                Arrays.stream(ids)
+                                        .map(String::valueOf)
+                                        .collect(Collectors.toList()));
             }
             Thread.sleep(INDEX_VISIBILITY_POLL_INTERVAL_MS);
         }
