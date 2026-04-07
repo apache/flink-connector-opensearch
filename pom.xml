@@ -376,6 +376,23 @@ under the License.
 				<artifactId>byte-buddy-agent</artifactId>
 				<version>1.14.19</version>
 			</dependency>
+
+			<!-- OpenSearch Java client 3.x stack (dependency convergence) -->
+			<dependency>
+				<groupId>jakarta.json</groupId>
+				<artifactId>jakarta.json-api</artifactId>
+				<version>2.1.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents.core5</groupId>
+				<artifactId>httpcore5</artifactId>
+				<version>5.4.2</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.httpcomponents.core5</groupId>
+				<artifactId>httpcore5-h2</artifactId>
+				<version>5.4.2</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
