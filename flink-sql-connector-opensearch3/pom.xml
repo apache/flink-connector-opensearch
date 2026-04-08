@@ -77,6 +77,19 @@ under the License.
 							</artifactSet>
 							<filters>
 								<filter>
+									<artifact>org.eclipse.parsson:parsson</artifact>
+									<excludes>
+										<!-- Dual-license notices mention GPL; Flink JarFileChecker flags substring false positives. -->
+										<exclude>**/messages.properties</exclude>
+									</excludes>
+								</filter>
+								<filter>
+									<artifact>org.glassfish:jakarta.json</artifact>
+									<excludes>
+										<exclude>**/messages.properties</exclude>
+									</excludes>
+								</filter>
+								<filter>
 									<artifact>*:*</artifact>
 									<excludes>
 										<!-- exclude Java 9 specific classes as otherwise the shade-plugin crashes -->
