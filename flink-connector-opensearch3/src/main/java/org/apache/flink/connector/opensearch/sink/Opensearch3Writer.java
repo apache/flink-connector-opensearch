@@ -28,6 +28,7 @@ import org.apache.flink.util.function.ThrowingRunnable;
 
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
@@ -95,6 +96,8 @@ class Opensearch3Writer<IN> implements SinkWriter<IN> {
      * @param metricGroup for the sink writer
      * @param mailboxExecutor Flink's mailbox executor
      * @param failureHandler handler for bulk operation failures
+     * @param httpClientConfigCallback optional customization of the HTTP client (after built-in
+     *     auth / TLS settings)
      */
     Opensearch3Writer(
             List<HttpHost> hosts,
@@ -104,13 +107,15 @@ class Opensearch3Writer<IN> implements SinkWriter<IN> {
             NetworkClientConfig networkClientConfig,
             SinkWriterMetricGroup metricGroup,
             MailboxExecutor mailboxExecutor,
-            Opensearch3FailureHandler failureHandler) {
+            Opensearch3FailureHandler failureHandler,
+            @Nullable Opensearch3HttpClientConfigCallback httpClientConfigCallback) {
         this.emitter = checkNotNull(emitter);
         this.flushOnCheckpoint = flushOnCheckpoint;
         this.mailboxExecutor = checkNotNull(mailboxExecutor);
         this.failureHandler = checkNotNull(failureHandler);
 
-        this.transport = createTransport(hosts, networkClientConfig);
+        this.transport =
+                createTransport(hosts, networkClientConfig, httpClientConfigCallback);
         this.client = new OpenSearchAsyncClient(transport);
         this.requestIndexer = new DefaultRequestIndexer(metricGroup.getNumRecordsSendCounter());
 
@@ -144,7 +149,10 @@ class Opensearch3Writer<IN> implements SinkWriter<IN> {
         }
     }
 
-    private OpenSearchTransport createTransport(List<HttpHost> hosts, NetworkClientConfig config) {
+    private OpenSearchTransport createTransport(
+            List<HttpHost> hosts,
+            NetworkClientConfig config,
+            @Nullable Opensearch3HttpClientConfigCallback httpClientConfigCallback) {
         HttpHost[] hostArray = hosts.toArray(new HttpHost[0]);
 
         ApacheHttpClient5TransportBuilder builder =
@@ -152,46 +160,50 @@ class Opensearch3Writer<IN> implements SinkWriter<IN> {
 
         builder.setHttpClientConfigCallback(
                 httpClientBuilder -> {
-                    // Configure credentials if provided
-                    if (config.getUsername() != null && config.getPassword() != null) {
-                        BasicCredentialsProvider credentialsProvider =
-                                new BasicCredentialsProvider();
-                        credentialsProvider.setCredentials(
-                                new AuthScope(null, -1),
-                                new UsernamePasswordCredentials(
-                                        config.getUsername(), config.getPassword().toCharArray()));
-                        httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                    HttpAsyncClientBuilder configured =
+                            applyBuiltinHttpClientSettings(httpClientBuilder, config);
+                    if (httpClientConfigCallback != null) {
+                        configured =
+                                httpClientConfigCallback.customizeHttpClient(configured);
                     }
-
-                    // Configure SSL if allow insecure
-                    if (config.isAllowInsecure().orElse(false)) {
-                        try {
-                            TlsStrategy tlsStrategy =
-                                    ClientTlsStrategyBuilder.create()
-                                            .setSslContext(
-                                                    SSLContextBuilder.create()
-                                                            .loadTrustMaterial(
-                                                                    null, (chain, authType) -> true)
-                                                            .build())
-                                            .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-                                            .build();
-                            PoolingAsyncClientConnectionManager connectionManager =
-                                    PoolingAsyncClientConnectionManagerBuilder.create()
-                                            .setTlsStrategy(tlsStrategy)
-                                            .build();
-                            httpClientBuilder.setConnectionManager(connectionManager);
-                        } catch (NoSuchAlgorithmException
-                                | KeyManagementException
-                                | KeyStoreException e) {
-                            throw new IllegalStateException(
-                                    "Unable to create custom SSL context", e);
-                        }
-                    }
-
-                    return httpClientBuilder;
+                    return configured;
                 });
 
         return builder.build();
+    }
+
+    private static HttpAsyncClientBuilder applyBuiltinHttpClientSettings(
+            HttpAsyncClientBuilder httpClientBuilder, NetworkClientConfig config) {
+        if (config.getUsername() != null && config.getPassword() != null) {
+            BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(
+                    new AuthScope(null, -1),
+                    new UsernamePasswordCredentials(
+                            config.getUsername(), config.getPassword().toCharArray()));
+            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+        }
+
+        if (config.isAllowInsecure().orElse(false)) {
+            try {
+                TlsStrategy tlsStrategy =
+                        ClientTlsStrategyBuilder.create()
+                                .setSslContext(
+                                        SSLContextBuilder.create()
+                                                .loadTrustMaterial(null, (chain, authType) -> true)
+                                                .build())
+                                .setHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                                .build();
+                PoolingAsyncClientConnectionManager connectionManager =
+                        PoolingAsyncClientConnectionManagerBuilder.create()
+                                .setTlsStrategy(tlsStrategy)
+                                .build();
+                httpClientBuilder.setConnectionManager(connectionManager);
+            } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
+                throw new IllegalStateException("Unable to create custom SSL context", e);
+            }
+        }
+
+        return httpClientBuilder;
     }
 
     @Override

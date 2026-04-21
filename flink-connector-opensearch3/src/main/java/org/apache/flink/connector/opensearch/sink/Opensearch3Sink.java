@@ -27,6 +27,8 @@ import org.apache.flink.connector.opensearch.sink.Opensearch3Writer.Opensearch3F
 
 import org.apache.hc.core5.http.HttpHost;
 
+import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -61,6 +63,7 @@ public class Opensearch3Sink<IN> implements Sink<IN> {
     private final NetworkClientConfig networkClientConfig;
     private final DeliveryGuarantee deliveryGuarantee;
     private final Opensearch3FailureHandler failureHandler;
+    @Nullable private final Opensearch3HttpClientConfigCallback httpClientConfigCallback;
 
     Opensearch3Sink(
             List<HttpHost> hosts,
@@ -68,7 +71,8 @@ public class Opensearch3Sink<IN> implements Sink<IN> {
             DeliveryGuarantee deliveryGuarantee,
             BulkProcessorConfig buildBulkProcessorConfig,
             NetworkClientConfig networkClientConfig,
-            Opensearch3FailureHandler failureHandler) {
+            Opensearch3FailureHandler failureHandler,
+            @Nullable Opensearch3HttpClientConfigCallback httpClientConfigCallback) {
         this.hosts = checkNotNull(hosts);
         checkArgument(!hosts.isEmpty(), "Hosts cannot be empty.");
         this.emitter = checkNotNull(emitter);
@@ -76,6 +80,7 @@ public class Opensearch3Sink<IN> implements Sink<IN> {
         this.buildBulkProcessorConfig = checkNotNull(buildBulkProcessorConfig);
         this.networkClientConfig = checkNotNull(networkClientConfig);
         this.failureHandler = checkNotNull(failureHandler);
+        this.httpClientConfigCallback = httpClientConfigCallback;
     }
 
     @Override
@@ -88,6 +93,7 @@ public class Opensearch3Sink<IN> implements Sink<IN> {
                 networkClientConfig,
                 context.metricGroup(),
                 context.getMailboxExecutor(),
-                failureHandler);
+                failureHandler,
+                httpClientConfigCallback);
     }
 }

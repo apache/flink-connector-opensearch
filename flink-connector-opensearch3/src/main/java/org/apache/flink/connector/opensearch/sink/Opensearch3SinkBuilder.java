@@ -28,6 +28,8 @@ import org.apache.flink.util.StringUtils;
 
 import org.apache.hc.core5.http.HttpHost;
 
+import javax.annotation.Nullable;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -43,7 +45,7 @@ import static org.apache.flink.util.Preconditions.checkState;
  *
  * <pre>{@code
  * Opensearch3Sink<String> sink = new Opensearch3SinkBuilder<String>()
- *     .setHosts(new HttpHost("localhost", 9200, "https"))
+ *     .setHosts(new HttpHost("https", "localhost", 9200))
  *     .setEmitter((element, context, indexer) -> {
  *          Map<String, Object> doc = new HashMap<>();
  *          doc.put("data", element);
@@ -75,6 +77,7 @@ public class Opensearch3SinkBuilder<IN> {
     private Integer socketTimeout;
     private Boolean allowInsecure;
     private Opensearch3FailureHandler failureHandler = new DefaultFailureHandler();
+    @Nullable private Opensearch3HttpClientConfigCallback httpClientConfigCallback;
 
     public Opensearch3SinkBuilder() {}
 
@@ -314,6 +317,23 @@ public class Opensearch3SinkBuilder<IN> {
     }
 
     /**
+     * Sets a callback that customizes the underlying Apache HttpClient 5 async client after the
+     * sink applies builder settings for credentials and insecure TLS.
+     *
+     * @param httpClientConfigCallback serializable callback; must not be null
+     * @return this builder
+     */
+    public Opensearch3SinkBuilder<IN> setHttpClientConfigCallback(
+            Opensearch3HttpClientConfigCallback httpClientConfigCallback) {
+        checkNotNull(httpClientConfigCallback);
+        checkState(
+                InstantiationUtil.isSerializable(httpClientConfigCallback),
+                "The HTTP client config callback must be serializable.");
+        this.httpClientConfigCallback = httpClientConfigCallback;
+        return self();
+    }
+
+    /**
      * Constructs the {@link Opensearch3Sink} with the properties configured this builder.
      *
      * @return {@link Opensearch3Sink}
@@ -331,7 +351,8 @@ public class Opensearch3SinkBuilder<IN> {
                 deliveryGuarantee,
                 bulkProcessorConfig,
                 networkClientConfig,
-                failureHandler);
+                failureHandler,
+                httpClientConfigCallback);
     }
 
     private NetworkClientConfig buildNetworkClientConfig() {
@@ -390,6 +411,8 @@ public class Opensearch3SinkBuilder<IN> {
                 + ", allowInsecure='"
                 + allowInsecure
                 + '\''
+                + ", httpClientConfigCallback="
+                + httpClientConfigCallback
                 + '}';
     }
 }
