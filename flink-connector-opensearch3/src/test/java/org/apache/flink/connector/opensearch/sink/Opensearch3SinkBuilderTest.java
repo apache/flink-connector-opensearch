@@ -102,8 +102,7 @@ class Opensearch3SinkBuilderTest {
 
     @Test
     void testThrowIfHttpClientConfigCallbackNull() {
-        assertThatThrownBy(
-                        () -> createMinimalBuilder().setHttpClientConfigCallback(null).build())
+        assertThatThrownBy(() -> createMinimalBuilder().setHttpClientConfigCallback(null).build())
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -124,12 +123,15 @@ class Opensearch3SinkBuilderTest {
         private static final long serialVersionUID = 1L;
 
         @Override
-        public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+        public HttpAsyncClientBuilder customizeHttpClient(
+                HttpAsyncClientBuilder httpClientBuilder) {
             return httpClientBuilder;
         }
     }
 
-    /** Holds a non-serializable field so {@link org.apache.flink.util.InstantiationUtil} rejects it. */
+    /**
+     * Holds a non-serializable field so {@link org.apache.flink.util.InstantiationUtil} rejects it.
+     */
     private static final class NonSerializableHttpClientConfigCallback
             implements Opensearch3HttpClientConfigCallback {
 
@@ -139,7 +141,8 @@ class Opensearch3SinkBuilderTest {
         private final Thread nonSerializable = Thread.currentThread();
 
         @Override
-        public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+        public HttpAsyncClientBuilder customizeHttpClient(
+                HttpAsyncClientBuilder httpClientBuilder) {
             return httpClientBuilder;
         }
     }

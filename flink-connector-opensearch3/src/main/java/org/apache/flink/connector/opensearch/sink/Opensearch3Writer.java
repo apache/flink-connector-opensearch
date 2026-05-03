@@ -114,8 +114,7 @@ class Opensearch3Writer<IN> implements SinkWriter<IN> {
         this.mailboxExecutor = checkNotNull(mailboxExecutor);
         this.failureHandler = checkNotNull(failureHandler);
 
-        this.transport =
-                createTransport(hosts, networkClientConfig, httpClientConfigCallback);
+        this.transport = createTransport(hosts, networkClientConfig, httpClientConfigCallback);
         this.client = new OpenSearchAsyncClient(transport);
         this.requestIndexer = new DefaultRequestIndexer(metricGroup.getNumRecordsSendCounter());
 
@@ -163,8 +162,7 @@ class Opensearch3Writer<IN> implements SinkWriter<IN> {
                     HttpAsyncClientBuilder configured =
                             applyBuiltinHttpClientSettings(httpClientBuilder, config);
                     if (httpClientConfigCallback != null) {
-                        configured =
-                                httpClientConfigCallback.customizeHttpClient(configured);
+                        configured = httpClientConfigCallback.customizeHttpClient(configured);
                     }
                     return configured;
                 });
