@@ -32,7 +32,8 @@ class PackagingITCase {
     @Test
     void testPackaging() throws Exception {
         final Path jar =
-                ResourceTestUtils.getResource(".*/flink-sql-connector-opensearch2-[^/]*\\.jar");
+                ResourceTestUtils.getResource(
+                        ".*[\\\\/]flink-sql-connector-opensearch2-[^\\\\/]*\\.jar");
 
         PackagingTestUtils.assertJarContainsOnlyFilesMatching(
                 jar,

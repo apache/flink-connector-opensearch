@@ -73,6 +73,9 @@ under the License.
 									<exclude>net.java.dev.jna:jna</exclude>
 									<exclude>org.hdrhistogram:HdrHistogram</exclude>
 									<exclude>org.yaml:snakeyaml</exclude>
+									<exclude>jakarta.annotation:jakarta.annotation-api</exclude>
+									<exclude>org.eclipse:yasson</exclude>
+									<exclude>org.eclipse.parsson:parsson</exclude>
 								</excludes>
 							</artifactSet>
 							<filters>
@@ -96,6 +99,7 @@ under the License.
 										<exclude>META-INF/versions/**</exclude>
 										<exclude>META-INF/services/com.fasterxml.**</exclude>
 										<exclude>META-INF/LICENSE.txt</exclude>
+										<exclude>**/effective_tld_names.dat</exclude>
 									</excludes>
 								</filter>
 							</filters>
@@ -107,6 +111,10 @@ under the License.
 								<relocation>
 									<pattern>org.apache.commons.logging</pattern>
 									<shadedPattern>org.apache.flink.opensearch3.shaded.org.apache.commons.logging</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.apache.http</pattern>
+									<shadedPattern>org.apache.flink.opensearch3.shaded.org.apache.http</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>org.apache.hc</pattern>
@@ -123,6 +131,10 @@ under the License.
 								<relocation>
 									<pattern>jakarta.json</pattern>
 									<shadedPattern>org.apache.flink.opensearch3.shaded.jakarta.json</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.glassfish</pattern>
+									<shadedPattern>org.apache.flink.opensearch3.shaded.org.glassfish</shadedPattern>
 								</relocation>
 							</relocations>
 						</configuration>
