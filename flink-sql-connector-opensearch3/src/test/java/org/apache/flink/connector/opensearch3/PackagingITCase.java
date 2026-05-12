@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.connector.opensearch;
+package org.apache.flink.connector.opensearch3;
 
 import org.apache.flink.packaging.PackagingTestUtils;
 import org.apache.flink.table.factories.Factory;
@@ -33,7 +33,7 @@ class PackagingITCase {
     void testPackaging() throws Exception {
         final Path jar =
                 ResourceTestUtils.getResource(
-                        ".*[\\\\/]flink-sql-connector-opensearch-[^\\\\/]*\\.jar");
+                        ".*[\\\\/]flink-sql-connector-opensearch3-[^\\\\/]*\\.jar");
 
         PackagingTestUtils.assertJarContainsOnlyFilesMatching(
                 jar,
@@ -42,6 +42,7 @@ class PackagingITCase {
                         "org/apache/flink/connector/base/",
                         "org/apache/flink/connector/opensearch/",
                         "org/apache/flink/opensearch/",
+                        "org/apache/flink/opensearch3/shaded/",
                         "org/apache/flink/streaming/connectors/opensearch/"));
         PackagingTestUtils.assertJarContainsServiceEntry(jar, Factory.class);
     }
