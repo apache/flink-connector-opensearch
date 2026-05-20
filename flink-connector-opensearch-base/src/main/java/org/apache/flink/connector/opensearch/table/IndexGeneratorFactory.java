@@ -36,12 +36,12 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Factory of {@link IndexGenerator}.
@@ -71,12 +71,10 @@ final class IndexGeneratorFactory {
             ZoneId localTimeZoneId) {
         final IndexHelper indexHelper = new IndexHelper();
         if (indexHelper.checkIsDynamicIndex(index)) {
+            List<LogicalType> logicalTypes =
+                    dataTypes.stream().map(DataType::getLogicalType).collect(Collectors.toList());
             return createRuntimeIndexGenerator(
-                    index,
-                    fieldNames.toArray(new String[0]),
-                    dataTypes.toArray(new DataType[0]),
-                    indexHelper,
-                    localTimeZoneId);
+                    index, fieldNames, logicalTypes, indexHelper, localTimeZoneId);
         } else {
             return new StaticIndexGenerator(index);
         }
@@ -93,8 +91,8 @@ final class IndexGeneratorFactory {
 
     private static IndexGenerator createRuntimeIndexGenerator(
             String index,
-            String[] fieldNames,
-            DataType[] fieldTypes,
+            List<String> fieldNames,
+            List<LogicalType> fieldTypes,
             IndexHelper indexHelper,
             ZoneId localTimeZoneId) {
         final String dynamicIndexPatternStr = indexHelper.extractDynamicIndexPatternStr(index);
@@ -119,7 +117,7 @@ final class IndexGeneratorFactory {
         final boolean isDynamicIndexWithFormat = indexHelper.checkIsDynamicIndexWithFormat(index);
         final int indexFieldPos =
                 indexHelper.extractIndexFieldPos(index, fieldNames, isDynamicIndexWithFormat);
-        final LogicalType indexFieldType = fieldTypes[indexFieldPos].getLogicalType();
+        final LogicalType indexFieldType = fieldTypes.get(indexFieldPos);
         final LogicalTypeRoot indexFieldLogicalTypeRoot = indexFieldType.getTypeRoot();
 
         // validate index field type
@@ -286,21 +284,20 @@ final class IndexGeneratorFactory {
 
         /** Extract index field position in a fieldNames, return the field position. */
         int extractIndexFieldPos(
-                String index, String[] fieldNames, boolean isDynamicIndexWithFormat) {
-            List<String> fieldList = Arrays.asList(fieldNames);
+                String index, List<String> fieldNames, boolean isDynamicIndexWithFormat) {
             String indexFieldName;
             if (isDynamicIndexWithFormat) {
                 indexFieldName = index.substring(index.indexOf("{") + 1, index.indexOf("|"));
             } else {
                 indexFieldName = index.substring(index.indexOf("{") + 1, index.indexOf("}"));
             }
-            if (!fieldList.contains(indexFieldName)) {
+            if (!fieldNames.contains(indexFieldName)) {
                 throw new TableException(
                         String.format(
                                 "Unknown field '%s' in index pattern '%s', please check the field name.",
                                 indexFieldName, index));
             }
-            return fieldList.indexOf(indexFieldName);
+            return fieldNames.indexOf(indexFieldName);
         }
 
         /** Extract dateTime format by the date format that extracted from index pattern string. */
