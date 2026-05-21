@@ -49,6 +49,7 @@ class OpensearchSinkExternalContext
     private static final int NUM_RECORDS_LOWER_BOUND = 100;
     private static final int BULK_BUFFER = 100;
     private static final int PAGE_LENGTH = NUM_RECORDS_UPPER_BOUND + 1;
+
     /** The index name. */
     private final String indexName;
 

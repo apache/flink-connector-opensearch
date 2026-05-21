@@ -28,6 +28,7 @@ class BulkProcessorConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final int bulkFlushMaxActions;
+
     /** -1 if bulk flush max size is disabled; otherwise max buffered bulk payload in bytes. */
     private final long bulkFlushMaxBytes;
 
