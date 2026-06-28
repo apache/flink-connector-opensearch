@@ -301,7 +301,7 @@ under the License.
 			<dependency>
 				<groupId>net.bytebuddy</groupId>
 				<artifactId>byte-buddy</artifactId>
-				<version>1.17.6</version>
+				<version>1.18.11</version>
 			</dependency>
 
 			<!-- For dependency convergence -->
