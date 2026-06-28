@@ -163,7 +163,7 @@ class OpensearchDynamicSinkITCase {
                         .getSource();
         Map<Object, Object> expectedMap = new HashMap<>();
         expectedMap.put("a", 1);
-        expectedMap.put("b", "00:00:12");
+        expectedMap.put("b", "00:00:12.345");
         expectedMap.put("c", "ABCDE");
         expectedMap.put("d", 12.12d);
         expectedMap.put("e", 2);
