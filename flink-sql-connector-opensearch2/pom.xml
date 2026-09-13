@@ -73,6 +73,9 @@ under the License.
 									<exclude>net.java.dev.jna:jna</exclude>
 									<exclude>org.hdrhistogram:HdrHistogram</exclude>
 									<exclude>org.yaml:snakeyaml</exclude>
+									<exclude>com.google.errorprone:error_prone_annotations</exclude>
+									<exclude>org.jspecify:jspecify</exclude>
+									<exclude>org.roaringbitmap:RoaringBitmap</exclude>
 								</excludes>
 							</artifactSet>
 							<filters>
