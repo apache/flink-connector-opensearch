@@ -67,7 +67,7 @@ under the License.
 		<japicmp.referenceVersion>1.0.0-1.20</japicmp.referenceVersion>
 
 		<slf4j.version>1.7.36</slf4j.version>
-		<log4j.version>2.24.1</log4j.version>
+		<log4j.version>2.25.4</log4j.version>
 
 		<flink.parent.artifactId>flink-connector-opensearch-parent</flink.parent.artifactId>
 		<!-- This property should contain the add-opens/add-exports commands required for the tests
