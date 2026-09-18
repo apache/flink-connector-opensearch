@@ -36,19 +36,16 @@ jobs:
         },
         {
           flink: 1.20-SNAPSHOT,
-          jdk: '11, 17, 21',
-          branch: main
+          jdk: '8, 11, 17, 21',
+          branch: v1.2
         }, 
         {
           flink: 1.20.5,
           jdk: '8, 11, 17, 21',
-          branch: main
+          branch: v1.2
         }, {
           flink: 1.19.3,
           jdk: '8, 11, 17, 21',
-          branch: v1.2
-        }, {
-          flink: 1.18.1,
           branch: v1.2
         }]
     uses: apache/flink-connector-shared-utils/.github/workflows/ci.yml@ci_utils

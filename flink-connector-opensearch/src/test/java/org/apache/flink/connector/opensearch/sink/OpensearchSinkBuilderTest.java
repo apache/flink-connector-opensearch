@@ -17,12 +17,12 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
+import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.WriterInitContext;
 import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.opensearch.sink.BulkResponseInspector.BulkResponseInspectorFactory;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
-import org.apache.flink.runtime.mailbox.SyncMailboxExecutor;
 import org.apache.flink.streaming.runtime.tasks.TestProcessingTimeService;
 import org.apache.flink.util.SimpleUserCodeClassLoader;
 import org.apache.flink.util.TestLoggerExtension;
@@ -161,7 +161,8 @@ class OpensearchSinkBuilderTest {
                         TestingSinkWriterMetricGroup.getSinkWriterMetricGroup(
                                 new UnregisteredMetricsGroup()));
 
-        Mockito.when(sinkInitContext.getMailboxExecutor()).thenReturn(new SyncMailboxExecutor());
+        MailboxExecutor executor = Mockito.mock(MailboxExecutor.class);
+        Mockito.when(sinkInitContext.getMailboxExecutor()).thenReturn(executor);
         Mockito.when(sinkInitContext.getProcessingTimeService())
                 .thenReturn(new TestProcessingTimeService());
         Mockito.when(sinkInitContext.getUserCodeClassLoader())
