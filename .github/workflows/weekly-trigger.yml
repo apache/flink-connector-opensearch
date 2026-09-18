@@ -27,73 +27,111 @@ on:
 
 permissions: read-all
 
+env:
+  STATE_ARTIFACT: weekly-tested-shas
+  STATE_FILE: state/tested-shas.json
+
 jobs:
   Trigger:
     if: github.repository == 'apache/flink-connector-opensearch'
     permissions:
+      contents: read
       actions: write
     concurrency:
       group: ${{ github.workflow }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
+      # The previous trigger run persisted the SHAs it last tested with fixed versions.
+      - name: "Resolve previous state run"
+        id: prev
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'weekly-trigger.yml',
+              status: 'success',
+              per_page: 1,
+            });
+            core.setOutput('run_id', data.workflow_runs[0]?.id?.toString() ?? '');
+
+      # Best effort: missing/expired artifact just means we fall back to running fixed versions.
+      - name: "Download previous tested SHAs"
+        if: steps.prev.outputs.run_id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ env.STATE_ARTIFACT }}
+          run-id: ${{ steps.prev.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: state
+
       - name: "Decide and trigger weekly"
         uses: actions/github-script@v9
         with:
           script: |
+            const fs = require('fs');
             // Branches exercised by the weekly matrix. Keep in sync with weekly.yml.
             const branches = ['main', 'v1.2'];
 
-            // Resolve the most recent weekly run to learn when it ran and whether it was green.
-            const { data: runs } = await github.rest.actions.listWorkflowRuns({
+            // Default to running fixed versions; only skip when we positively confirm nothing changed and last was green.
+            let runFixed = true;
+            let reason = 'defaulting to full run';
+            const current = {};
+
+            try {
+              // Exact SHAs tested with fixed versions last time (empty on first run or expired artifact).
+              let previous = {};
+              try { previous = JSON.parse(fs.readFileSync(process.env.STATE_FILE, 'utf8')); } catch (e) {}
+
+              // Current HEAD SHA of each watched branch; a lookup failure is treated as "changed" (safe direction).
+              const changed = [];
+              for (const b of branches) {
+                try {
+                  const { data } = await github.rest.repos.getBranch({ owner: context.repo.owner, repo: context.repo.repo, branch: b });
+                  current[b] = data.commit.sha;
+                  if (previous[b] !== current[b]) changed.push(b);
+                } catch (e) {
+                  core.warning(`Could not resolve HEAD of ${b}: ${e.message}; assuming it changed.`);
+                  changed.push(b);
+                }
+              }
+
+              // Last weekly conclusion, so a non-green run retries fixed versions even without new commits.
+              const { data: runs } = await github.rest.actions.listWorkflowRuns({ owner: context.repo.owner, repo: context.repo.repo, workflow_id: 'weekly.yml', per_page: 1 });
+              const lastWeekly = runs.workflow_runs[0];
+
+              const manual = context.eventName === 'workflow_dispatch';
+              const notGreen = !lastWeekly || lastWeekly.conclusion !== 'success';
+              runFixed = manual || notGreen || changed.length > 0;
+              reason = manual ? 'manual dispatch'
+                : notGreen ? `last weekly concluded '${lastWeekly?.conclusion ?? 'none'}'`
+                : changed.length ? `new commits on ${changed.join(', ')}`
+                : 'no new commits and last weekly was green';
+            } catch (e) {
+              core.warning(`Failed to compute fixed-version decision: ${e.message}; running fixed versions.`);
+            }
+            core.info(`Weekly dispatch (fixed versions: ${runFixed}): ${reason}.`);
+
+            // Snapshots must always run, so this dispatch happens regardless of the decision above.
+            await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'weekly.yml',
-              per_page: 1,
+              ref: context.ref.replace('refs/heads/', ''),
+              inputs: { run_fixed_versions: String(runFixed) },
             });
-            const lastRun = runs.workflow_runs[0];
-            const lastConclusion = lastRun?.conclusion ?? undefined;
-            const lastRunAt = lastRun?.created_at ?? undefined;
 
-            async function trigger(reason) {
-              core.info(`Triggering weekly: ${reason}.`);
-              await github.rest.actions.createWorkflowDispatch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: 'weekly.yml',
-                ref: context.ref.replace('refs/heads/', ''),
-              });
-            }
+            // Fixed versions run whenever a SHA changed, so the resolved HEADs are the new baseline (unresolved branches are re-checked next run).
+            fs.mkdirSync('state', { recursive: true });
+            fs.writeFileSync(process.env.STATE_FILE, JSON.stringify(current));
 
-            // Manual triggers always run.
-            if (context.eventName === 'workflow_dispatch') {
-              await trigger('manual dispatch');
-              return;
-            }
-
-            // No previous run, or last run failed/cancelled: run so failures get retried even without new commits.
-            if (!lastRun) {
-              await trigger('no previous weekly run found');
-              return;
-            }
-            if (lastConclusion !== 'success') {
-              await trigger(`last weekly run concluded '${lastConclusion ?? 'unknown'}', re-running`);
-              return;
-            }
-
-            // Last weekly was green: skip unless any watched branch has new commits since it started (manual runs still work).
-            for (const branch of branches) {
-              const { data: commits } = await github.rest.repos.listCommits({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                sha: branch,
-                since: lastRunAt,
-                per_page: 1,
-              });
-              if (commits.length > 0) {
-                await trigger(`new commits on ${branch} since ${lastRunAt}`);
-                return;
-              }
-            }
-
-            core.info(`No new commits on ${branches.join(', ')} since ${lastRunAt} and last weekly was green, skipping scheduled weekly.`);
+      # Persist the baseline for the next scheduled run.
+      - name: "Upload tested SHAs"
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.STATE_ARTIFACT }}
+          path: ${{ env.STATE_FILE }}
+          retention-days: 90
