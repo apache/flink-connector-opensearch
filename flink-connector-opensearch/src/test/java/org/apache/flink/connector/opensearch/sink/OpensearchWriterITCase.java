@@ -17,7 +17,6 @@
 
 package org.apache.flink.connector.opensearch.sink;
 
-import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.connector.opensearch.OpensearchUtil;
@@ -27,11 +26,10 @@ import org.apache.flink.metrics.Gauge;
 import org.apache.flink.metrics.groups.OperatorIOMetricGroup;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.metrics.testutils.MetricListener;
+import org.apache.flink.runtime.mailbox.SyncMailboxExecutor;
 import org.apache.flink.runtime.metrics.MetricNames;
 import org.apache.flink.runtime.metrics.groups.UnregisteredMetricGroups;
-import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.TestLoggerExtension;
-import org.apache.flink.util.function.ThrowingRunnable;
 
 import org.apache.http.HttpHost;
 import org.junit.jupiter.api.AfterEach;
@@ -331,7 +329,7 @@ class OpensearchWriterITCase {
                         null,
                         true),
                 metricGroup,
-                new TestMailbox(),
+                new SyncMailboxExecutor(),
                 new DefaultRestClientFactory(),
                 new DefaultBulkResponseInspector(failureHandler));
     }
@@ -374,31 +372,6 @@ class OpensearchWriterITCase {
                         indexer.add(new IndexRequest(index).id(id).source(document));
                     }
             }
-        }
-    }
-
-    private static class TestMailbox implements MailboxExecutor {
-
-        @Override
-        public void execute(
-                ThrowingRunnable<? extends Exception> command,
-                String descriptionFormat,
-                Object... descriptionArgs) {
-            try {
-                command.run();
-            } catch (Exception e) {
-                throw new RuntimeException("Unexpected error", e);
-            }
-        }
-
-        @Override
-        public void yield() throws InterruptedException, FlinkRuntimeException {
-            Thread.sleep(100);
-        }
-
-        @Override
-        public boolean tryYield() throws FlinkRuntimeException {
-            return false;
         }
     }
 }
