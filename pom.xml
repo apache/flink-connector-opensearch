@@ -298,13 +298,6 @@ under the License.
 
 			<!-- For dependency convergence -->
 			<dependency>
-				<groupId>net.bytebuddy</groupId>
-				<artifactId>byte-buddy</artifactId>
-				<version>1.14.13</version>
-			</dependency>
-
-			<!-- For dependency convergence -->
-			<dependency>
 				<groupId>com.fasterxml.jackson</groupId>
 				<artifactId>jackson-bom</artifactId>
 				<type>pom</type>

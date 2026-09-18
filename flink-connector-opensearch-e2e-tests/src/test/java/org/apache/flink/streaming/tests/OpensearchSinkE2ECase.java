@@ -19,6 +19,7 @@ package org.apache.flink.streaming.tests;
 
 import org.apache.flink.connector.opensearch.test.DockerImageVersions;
 import org.apache.flink.connector.testframe.container.FlinkContainerTestEnvironment;
+import org.apache.flink.connector.testframe.container.FlinkContainersSettings;
 import org.apache.flink.connector.testframe.external.DefaultContainerizedExternalSystem;
 import org.apache.flink.connector.testframe.external.ExternalSystemDataReader;
 import org.apache.flink.connector.testframe.junit.annotations.TestContext;
@@ -52,7 +53,13 @@ public class OpensearchSinkE2ECase extends SinkTestSuiteBase<ComparableTuple2<In
     @TestSemantics
     CheckpointingMode[] semantics = new CheckpointingMode[] {CheckpointingMode.EXACTLY_ONCE};
 
-    @TestEnv FlinkContainerTestEnvironment flink = new FlinkContainerTestEnvironment(1, 6);
+    @TestEnv
+    FlinkContainerTestEnvironment flink =
+            FlinkContainerTestEnvironment.fromSettings(
+                    FlinkContainersSettings.builder()
+                            .numTaskManagers(1)
+                            .numSlotsPerTaskManager(6)
+                            .build());
 
     public OpensearchSinkE2ECase() throws Exception {}
 
