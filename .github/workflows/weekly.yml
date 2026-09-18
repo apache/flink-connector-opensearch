@@ -20,9 +20,8 @@
 # between several workflows with the same names while preparing a report for GHA usage
 # https://infra-reports.apache.org/#ghactions
 name: Weekly Flink Connector Opensearch
+# Scheduling is handled by weekly-trigger.yml, which skips when no new commits and the previous weekly was green.
 on:
-  schedule:
-    - cron: "0 0 * * 0"
   workflow_dispatch:
 jobs:
   compile_and_test:
