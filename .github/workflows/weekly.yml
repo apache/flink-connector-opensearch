@@ -20,12 +20,18 @@
 # between several workflows with the same names while preparing a report for GHA usage
 # https://infra-reports.apache.org/#ghactions
 name: Weekly Flink Connector Opensearch
+# Scheduling is handled by weekly-trigger.yml: snapshots always run, fixed versions only on new commits or a non-green previous run.
 on:
-  schedule:
-    - cron: "0 0 * * 0"
   workflow_dispatch:
+    inputs:
+      run_fixed_versions:
+        description: "Also test against fixed (released) Flink versions"
+        type: choice
+        options: ["true", "false"]
+        default: "true"
 jobs:
-  compile_and_test:
+  # Snapshot Flink versions change upstream regardless of connector commits, so they always run.
+  compile_and_test_snapshot:
     if: github.repository_owner == 'apache'
     strategy:
       matrix:
@@ -34,12 +40,24 @@ jobs:
           jdk: '11, 17, 21',
           branch: main
         },
-        {
-          flink: 1.20-SNAPSHOT,
-          jdk: '8, 11, 17, 21',
-          branch: v1.2
-        }, 
-        {
+          {
+            flink: 1.20-SNAPSHOT,
+            jdk: '8, 11, 17, 21',
+            branch: v1.2
+          }]
+    uses: apache/flink-connector-shared-utils/.github/workflows/ci.yml@ci_utils
+    with:
+      flink_version: ${{ matrix.flink_branches.flink }}
+      jdk_version: ${{ matrix.flink_branches.jdk || '8, 11, 17' }}
+      connector_branch: ${{ matrix.flink_branches.branch }}
+      run_dependency_convergence: false
+
+  # Fixed Flink versions only change with connector commits, so they run only when requested by the trigger.
+  compile_and_test_fixed:
+    if: ${{ github.repository_owner == 'apache' && inputs.run_fixed_versions == 'true' }}
+    strategy:
+      matrix:
+        flink_branches: [ {
           flink: 1.20.5,
           jdk: '8, 11, 17, 21',
           branch: v1.2
