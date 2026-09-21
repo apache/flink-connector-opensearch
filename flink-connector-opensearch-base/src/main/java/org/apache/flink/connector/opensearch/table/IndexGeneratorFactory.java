@@ -204,10 +204,10 @@ final class IndexGeneratorFactory {
     static class IndexHelper {
         private static final Pattern dynamicIndexPattern = Pattern.compile("\\{[^\\{\\}]+\\}?");
         private static final Pattern dynamicIndexTimeExtractPattern =
-                Pattern.compile(".*\\{.+\\|.*\\}.*");
+                Pattern.compile("[^{]*+\\{[^}|]+\\|[^}]*\\}[^}]*+");
         private static final Pattern dynamicIndexSystemTimeExtractPattern =
                 Pattern.compile(
-                        ".*\\{\\s*(now\\(\\s*\\)|NOW\\(\\s*\\)|current_timestamp|CURRENT_TIMESTAMP)\\s*\\|.*\\}.*");
+                        "[^{]*+\\{\\s*+(now\\(\\s*+\\)|NOW\\(\\s*+\\)|current_timestamp|CURRENT_TIMESTAMP)\\s*+\\|[^}]*\\}[^}]*+");
         private static final List<LogicalTypeRoot> supportedTypes = new ArrayList<>();
         private static final Map<LogicalTypeRoot, String> defaultFormats = new HashMap<>();
 
