@@ -130,7 +130,7 @@ class Opensearch2DynamicSinkITCase {
         GenericRowData rowData =
                 GenericRowData.of(
                         1L,
-                        12345,
+                        12000,
                         StringData.fromString("ABCDE"),
                         12.12f,
                         (byte) 2,
@@ -163,7 +163,7 @@ class Opensearch2DynamicSinkITCase {
                         .getSource();
         Map<Object, Object> expectedMap = new HashMap<>();
         expectedMap.put("a", 1);
-        expectedMap.put("b", "00:00:12.345");
+        expectedMap.put("b", "00:00:12");
         expectedMap.put("c", "ABCDE");
         expectedMap.put("d", 12.12d);
         expectedMap.put("e", 2);
