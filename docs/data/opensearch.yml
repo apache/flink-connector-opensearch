@@ -17,6 +17,7 @@
 ################################################################################
 
 version: 2.0.0-SNAPSHOT
+flink_compatibility: ["1.18", "1.19"]
 variants:
   - maven: flink-connector-opensearch
     sql_url: https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-opensearch/$full_version/flink-sql-connector-opensearch-$full_version.jar
