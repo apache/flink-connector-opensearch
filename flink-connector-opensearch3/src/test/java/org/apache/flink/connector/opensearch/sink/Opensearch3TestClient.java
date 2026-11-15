@@ -61,7 +61,7 @@ public class Opensearch3TestClient implements Closeable {
     private final OpenSearchClient client;
     private final OpenSearchTransport transport;
 
-    public Opensearch3TestClient(OpensearchContainer container) throws URISyntaxException {
+    public Opensearch3TestClient(OpensearchContainer<?> container) throws URISyntaxException {
         HttpHost host = HttpHost.create(container.getHttpHostAddress());
 
         ApacheHttpClient5TransportBuilder builder = ApacheHttpClient5TransportBuilder.builder(host);

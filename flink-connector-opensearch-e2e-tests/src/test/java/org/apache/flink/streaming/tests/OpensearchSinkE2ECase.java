@@ -57,10 +57,10 @@ public class OpensearchSinkE2ECase extends SinkTestSuiteBase<ComparableTuple2<In
     public OpensearchSinkE2ECase() throws Exception {}
 
     @TestExternalSystem
-    DefaultContainerizedExternalSystem<OpensearchContainer> opensearch =
+    DefaultContainerizedExternalSystem<? extends OpensearchContainer<?>> opensearch =
             DefaultContainerizedExternalSystem.builder()
                     .fromContainer(
-                            new OpensearchContainer(
+                            new OpensearchContainer<>(
                                             DockerImageName.parse(DockerImageVersions.OPENSEARCH_1))
                                     .withEnv(
                                             "cluster.routing.allocation.disk.threshold_enabled",

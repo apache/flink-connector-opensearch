@@ -31,7 +31,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
 class OpensearchSinkExternalContextFactory
         implements ExternalContextFactory<OpensearchSinkExternalContext> {
     /** The OpensearchContainer container. */
-    private final OpensearchContainer opensearchContainer;
+    private final OpensearchContainer<?> opensearchContainer;
 
     /** The connector jars. */
     private final List<URL> connectorJars;
@@ -43,7 +43,7 @@ class OpensearchSinkExternalContextFactory
      * @param connectorJars The connector jars.
      */
     OpensearchSinkExternalContextFactory(
-            OpensearchContainer opensearchContainer, List<URL> connectorJars) {
+            OpensearchContainer<?> opensearchContainer, List<URL> connectorJars) {
         this.opensearchContainer = checkNotNull(opensearchContainer);
         this.connectorJars = checkNotNull(connectorJars);
     }

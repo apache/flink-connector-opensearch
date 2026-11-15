@@ -67,7 +67,7 @@ class Opensearch2SinkITCase {
     private Opensearch2TestClient context;
 
     @Container
-    private static final OpensearchContainer OS_CONTAINER =
+    private static final OpensearchContainer<?> OS_CONTAINER =
             OpensearchUtil.createOpensearchContainer(DockerImageVersions.OPENSEARCH_2, LOG);
 
     @BeforeEach
