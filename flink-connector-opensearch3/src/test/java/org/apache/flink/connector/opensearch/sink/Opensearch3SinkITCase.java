@@ -67,7 +67,7 @@ class Opensearch3SinkITCase {
     private Opensearch3TestClient context;
 
     @Container
-    private static final OpensearchContainer OS_CONTAINER =
+    private static final OpensearchContainer<?> OS_CONTAINER =
             new OpensearchContainer(DockerImageName.parse(DockerImageVersions.OPENSEARCH_3))
                     .withSecurityEnabled();
 

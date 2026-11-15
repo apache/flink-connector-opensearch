@@ -59,7 +59,7 @@ public class OpensearchUtil {
      * @param log to derive the log level from
      * @return configured Opensearch container
      */
-    public static OpensearchContainer createOpensearchContainer(
+    public static OpensearchContainer<?> createOpensearchContainer(
             String dockerImageVersion, Logger log) {
         String logLevel;
         if (log.isTraceEnabled()) {
@@ -76,7 +76,7 @@ public class OpensearchUtil {
             logLevel = "OFF";
         }
 
-        return new OpensearchContainer(DockerImageName.parse(dockerImageVersion))
+        return new OpensearchContainer<>(DockerImageName.parse(dockerImageVersion))
                 .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms2g -Xmx2g")
                 .withEnv("logger.org.opensearch", logLevel)
                 .withLogConsumer(new Slf4jLogConsumer(log));

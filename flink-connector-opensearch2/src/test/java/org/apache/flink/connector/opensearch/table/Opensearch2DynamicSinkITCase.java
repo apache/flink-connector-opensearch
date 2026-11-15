@@ -75,7 +75,7 @@ class Opensearch2DynamicSinkITCase {
     private static final Logger LOG = LoggerFactory.getLogger(Opensearch2DynamicSinkITCase.class);
 
     @Container
-    private static final OpensearchContainer OS_CONTAINER =
+    private static final OpensearchContainer<?> OS_CONTAINER =
             OpensearchUtil.createOpensearchContainer(DockerImageVersions.OPENSEARCH_2, LOG);
 
     private TestContext getPrefilledTestContext(String index) {

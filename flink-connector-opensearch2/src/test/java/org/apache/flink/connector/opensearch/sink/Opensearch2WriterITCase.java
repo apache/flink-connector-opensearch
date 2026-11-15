@@ -63,7 +63,7 @@ class Opensearch2WriterITCase {
     private static final Logger LOG = LoggerFactory.getLogger(Opensearch2WriterITCase.class);
 
     @Container
-    private static final OpensearchContainer OS_CONTAINER =
+    private static final OpensearchContainer<?> OS_CONTAINER =
             OpensearchUtil.createOpensearchContainer(DockerImageVersions.OPENSEARCH_2, LOG);
 
     private RestHighLevelClient client;
