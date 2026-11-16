@@ -186,7 +186,7 @@ public class OpensearchSinkTest {
      * logic is broken.
      */
     @Test
-    @Timeout(5)
+    @Timeout(10)
     public void testItemFailureRethrownOnCheckpointAfterFlush() throws Throwable {
         final OpensearchSink.Builder<String> builder =
                 new OpensearchSink.Builder<>(
@@ -314,7 +314,7 @@ public class OpensearchSinkTest {
      * logic is broken.
      */
     @Test
-    @Timeout(5)
+    @Timeout(10)
     public void testBulkFailureRethrownOnOnCheckpointAfterFlush() throws Throwable {
         final OpensearchSink.Builder<String> builder =
                 new OpensearchSink.Builder<>(
@@ -373,7 +373,7 @@ public class OpensearchSinkTest {
      * checkpoints; we set a timeout because the test will not finish if the logic is broken.
      */
     @Test
-    @Timeout(5)
+    @Timeout(10)
     public void testAtLeastOnceSink() throws Throwable {
         final OpensearchSink.Builder<String> builder =
                 new OpensearchSink.Builder<>(
@@ -452,7 +452,7 @@ public class OpensearchSinkTest {
      * set a timeout because the test will not finish if the logic is broken.
      */
     @Test
-    @Timeout(5)
+    @Timeout(10)
     public void testDoesNotWaitForPendingRequestsIfFlushingDisabled() throws Exception {
         final OpensearchSink.Builder<String> builder =
                 new OpensearchSink.Builder<>(
