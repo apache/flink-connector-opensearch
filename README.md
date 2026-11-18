@@ -20,7 +20,7 @@ Prerequisites:
 ```
 git clone https://github.com/apache/flink-connector-opensearch.git
 cd flink-connector-opensearch
-./mvn clean package -DskipTests
+./mvnw clean package -DskipTests
 ```
 
 The resulting jars can be found in the `target` directory of the respective module.
@@ -39,7 +39,7 @@ Minimal requirements for an IDE are:
 The IntelliJ IDE supports Maven out of the box and offers a plugin for Scala development.
 
 * IntelliJ download: [https://www.jetbrains.com/idea/](https://www.jetbrains.com/idea/)
-* IntelliJ Scala Plugin: [https://plugins.jetbrains.com/plugin/?id=1347](https://plugins.jetbrains.com/plugin/?id=1347)
+* IntelliJ Scala Plugin: [https://plugins.jetbrains.com/plugin/1347-scala](https://plugins.jetbrains.com/plugin/1347-scala)
 
 Check out our [Setting up IntelliJ](https://nightlies.apache.org/flink/flink-docs-master/flinkDev/ide_setup.html#intellij-idea) guide for details.
 
